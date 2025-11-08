@@ -1,0 +1,5 @@
+{
+  "name": "WEIntegrity Project Management Web App",
+  "description": "A comprehensive project management application for enterprises, featuring role-based access control, project and team management, story tracking, integrated chat, and data-driven dashboards. All data is mocked and persisted locally.",
+  "requestFramePermissions": []
+}
