@@ -127,18 +127,22 @@ const Projects: React.FC = () => {
       return;
     }
 
+    // Determine the final owner ID (use selected owner or current user)
+    const finalOwnerId = newProjectData.ownerId && newProjectData.ownerId.trim() !== '' 
+      ? newProjectData.ownerId 
+      : currentUser!.id;
+    
     // Aggregate member IDs from selected teams
     const memberIdsFromTeams = teams
       .filter(team => newProjectData.teamIds.includes(team.id))
       .flatMap(team => team.memberIds);
       
-    // Combine with owner and remove duplicates/falsy values
-    const allMemberIds = Array.from(new Set([...memberIdsFromTeams, newProjectData.ownerId].filter(Boolean) as string[]));
-
+    // Combine with owner and remove duplicates
+    const allMemberIds = Array.from(new Set([...memberIdsFromTeams, finalOwnerId]));
     const newProject: Project = {
         id: `proj-${Date.now()}`,
         name: newProjectData.name,
-        ownerId: newProjectData.ownerId,
+        ownerId: finalOwnerId,
         startDate: newProjectData.startDate,
         endDate: newProjectData.endDate,
         description: newProjectData.description,
@@ -150,11 +154,13 @@ const Projects: React.FC = () => {
       toastContext.addToast('Project created successfully!', 'success');
       handleCloseModal();
     } catch (error) {
-      toastContext.addToast('Failed to create project. Please try again.', 'error');
+      console.error('Project creation error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create project. Please try again.';
+      toastContext.addToast(errorMessage, 'error');
     }
   };
   
-  const canCreateProject = currentUser ? settings.accessControl[currentUser.role].canCreateProject : false;
+  const canCreateProject = currentUser && settings?.accessControl?.[currentUser.role]?.canCreateProject === true;
 
   const today = new Date().toISOString().split('T')[0];
 
@@ -233,7 +239,7 @@ const Projects: React.FC = () => {
         <form onSubmit={handleSubmit} className="space-y-4">
             <FormField id="name" label="Project Name" value={newProjectData.name} onChange={handleFormChange} required />
             <SelectDropdown
-                label="Project Owner"
+                label="Project Owner (Optional)"
                 value={newProjectData.ownerId}
                 onChange={(value) => setNewProjectData(prev => ({...prev, ownerId: value }))}
                 options={[
@@ -249,12 +255,17 @@ const Projects: React.FC = () => {
                 <FormField id="endDate" label="End Date" type="date" value={newProjectData.endDate} onChange={handleFormChange} required min={newProjectData.startDate || today} />
             </div>
             <FormField id="description" label="Description" as="textarea" value={newProjectData.description} onChange={handleFormChange} />
-            <FormField id="status" label="Status" as="select" value={newProjectData.status} onChange={handleFormChange} required>
-              {Object.values(ProjectStatus).map(s => <option key={s} value={s}>{s}</option>)}
-            </FormField>
+            <SelectDropdown
+                label="Status"
+                value={newProjectData.status}
+                onChange={(value) => setNewProjectData(prev => ({...prev, status: value as ProjectStatus }))}
+                options={Object.values(ProjectStatus).map(s => ({ value: s, label: s }))}
+                placeholder="Select Project Status"
+            />
             
             <div>
                 <label className="block text-sm font-medium text-gray-700">Assign Teams *</label>
+                <p className="text-xs text-gray-500 mt-1 mb-2">Note: Only teams not assigned to other projects are shown.</p>
                 <div className="mt-2 max-h-48 overflow-y-auto border border-gray-300 rounded-md p-2 space-y-2">
                     {availableTeams.length > 0 ? availableTeams.map(team => (
                         <div key={team.id} className="flex items-center">
@@ -263,7 +274,7 @@ const Projects: React.FC = () => {
                                 {team.name}
                            </label>
                         </div>
-                    )) : <p className="text-gray-500 text-center text-sm p-2">No available teams.</p>}
+                    )) : <p className="text-gray-500 text-center text-sm p-2">No available teams. All teams are already assigned to projects.</p>}
                 </div>
             </div>
 

@@ -98,7 +98,7 @@ const Teams: React.FC = () => {
     }
   };
   
-  const canCreateTeam = currentUser ? settings.accessControl[currentUser.role].canCreateTeam : false;
+  const canCreateTeam = currentUser && settings?.accessControl?.[currentUser.role]?.canCreateTeam === true;
 
   const columns = [
     { key: 'name', header: 'Team Name' },
@@ -153,21 +153,26 @@ const Teams: React.FC = () => {
         </FormField>
         <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Team Members</label>
+            <p className="text-xs text-gray-500 mb-2">Note: Only employees not assigned to other teams are shown.</p>
             <div className="max-h-60 overflow-y-auto p-2 border border-gray-300 rounded-md">
-                {availableUsers.filter(u => u.id !== newTeamData.leadId).map(user => (
-                    <div key={user.id} className="flex items-center p-1">
-                        <input
-                            type="checkbox"
-                            id={`member-${user.id}`}
-                            checked={newTeamData.memberIds.includes(user.id)}
-                            onChange={() => handleMemberSelect(user.id)}
-                            className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                        />
-                        <label htmlFor={`member-${user.id}`} className="ml-3 text-sm text-gray-700">
-                            {user.firstName} {user.lastName} <span className="text-xs text-gray-500">({user.jobTitle})</span>
-                        </label>
-                    </div>
-                ))}
+                {availableUsers.filter(u => u.id !== newTeamData.leadId).length > 0 ? (
+                  availableUsers.filter(u => u.id !== newTeamData.leadId).map(user => (
+                      <div key={user.id} className="flex items-center p-1">
+                          <input
+                              type="checkbox"
+                              id={`member-${user.id}`}
+                              checked={newTeamData.memberIds.includes(user.id)}
+                              onChange={() => handleMemberSelect(user.id)}
+                              className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          />
+                          <label htmlFor={`member-${user.id}`} className="ml-3 text-sm text-gray-700">
+                              {user.firstName} {user.lastName} <span className="text-xs text-gray-500">({user.jobTitle})</span>
+                          </label>
+                      </div>
+                  ))
+                ) : (
+                  <p className="text-gray-500 text-center text-sm p-4">No available employees. All employees are already assigned to teams.</p>
+                )}
             </div>
         </div>
          <div className="flex justify-end gap-2 pt-4">

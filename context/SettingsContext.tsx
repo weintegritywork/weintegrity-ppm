@@ -81,7 +81,7 @@ const defaultGlobalSettings: GlobalSettings = {
     [Role.HR]: {
       canViewTeams: true, canViewEmployees: true, canAccessSettings: false,
       canCreateProject: false, canEditProject: false, canDeleteProject: false,
-      canCreateTeam: false, canEditTeam: false, canDeleteTeam: false,
+      canCreateTeam: true, canEditTeam: true, canDeleteTeam: true,
       canCreateStory: false, canEditStory: false, canDeleteStory: false,
       canManageUsers: false, canManageBranding: true,
     },
@@ -95,7 +95,7 @@ const defaultGlobalSettings: GlobalSettings = {
     [Role.TeamLead]: {
       canViewTeams: true, canViewEmployees: false, canAccessSettings: false,
       canCreateProject: false, canEditProject: false, canDeleteProject: false,
-      canCreateTeam: false, canEditTeam: true, canDeleteTeam: false,
+      canCreateTeam: false, canEditTeam: true, canDeleteTeam: true,
       canCreateStory: true, canEditStory: true, canDeleteStory: false,
       canManageUsers: false, canManageBranding: false,
     },

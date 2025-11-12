@@ -8,8 +8,9 @@ import { ToastContext } from '../context/ToastContext';
 import Card from '../components/Card';
 import Modal from '../components/Modal';
 import FormField from '../components/FormField';
-import { Story, StoryState, Role, User } from '../types';
-import { isEmailUnique } from '../utils/validators';
+import { Story, StoryState, Role, User, WorkLocation } from '../types';
+import { isEmailUnique, isPhoneUnique } from '../utils/validators';
+import SelectDropdown from '../components/SelectDropdown';
 import PageHeader from '../components/PageHeader';
 
 
@@ -38,6 +39,7 @@ const Profile: React.FC = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [skillInput, setSkillInput] = useState('');
 
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
@@ -115,6 +117,32 @@ const Profile: React.FC = () => {
     }
   };
 
+  const handleAddSkill = () => {
+    if (editingUser && skillInput.trim() && !editingUser.skills?.includes(skillInput.trim())) {
+      setEditingUser({
+        ...editingUser,
+        skills: [...(editingUser.skills || []), skillInput.trim()]
+      });
+      setSkillInput('');
+    }
+  };
+
+  const handleRemoveSkill = (skillToRemove: string) => {
+    if (editingUser) {
+      setEditingUser({
+        ...editingUser,
+        skills: editingUser.skills?.filter(skill => skill !== skillToRemove)
+      });
+    }
+  };
+
+  const handleSkillKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleAddSkill();
+    }
+  };
+
   const validate = (): boolean => {
     if (!editingUser) return false;
     const newErrors: Record<string, string> = {};
@@ -122,6 +150,11 @@ const Profile: React.FC = () => {
     if (!editingUser.lastName) newErrors.lastName = 'Last name is required';
     if (!editingUser.email) newErrors.email = 'Email is required';
     else if (!isEmailUnique(editingUser.email, users, editingUser.id)) newErrors.email = 'Email already exists';
+    if (!editingUser.phone) newErrors.phone = 'Phone is required';
+    else if (!isPhoneUnique(editingUser.phone, users, editingUser.id)) newErrors.phone = 'Phone number already exists';
+    if (!editingUser.department) newErrors.department = 'Department is required';
+    if (!editingUser.jobTitle) newErrors.jobTitle = 'Job title is required';
+    if (!editingUser.dateOfJoining) newErrors.dateOfJoining = 'Date of joining is required';
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -226,6 +259,24 @@ const Profile: React.FC = () => {
               <DetailItem label="Role" value={user.role} />
               <DetailItem label="Assigned Team" value={team ? <Link to={`/teams/${team.id}`} className="text-blue-600 hover:underline">{team.name}</Link> : 'N/A'} />
               <DetailItem label="Assigned Project" value={project ? <Link to={`/projects/${project.id}`} className="text-blue-600 hover:underline">{project.name}</Link> : 'N/A'} />
+              {user.experience !== undefined && <DetailItem label="Experience" value={`${user.experience} years`} />}
+              {user.nativeLocation && <DetailItem label="Native Location" value={user.nativeLocation} />}
+              {user.workLocation && <DetailItem label="Work Location" value={user.workLocation} />}
+              {user.skills && user.skills.length > 0 && (
+                <div className="md:col-span-2">
+                  <dt className="text-sm font-medium text-gray-500">Skills</dt>
+                  <dd className="mt-2 flex flex-wrap gap-2">
+                    {user.skills.map((skill, index) => (
+                      <span
+                        key={index}
+                        className="inline-flex items-center px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium"
+                      >
+                        {skill}
+                      </span>
+                    ))}
+                  </dd>
+                </div>
+              )}
             </dl>
           </Card>
           <Card title="Assigned Stories" className="mt-6">
@@ -309,13 +360,94 @@ const Profile: React.FC = () => {
                 <FormField id="firstName" label="First Name" value={editingUser.firstName} onChange={handleFormChange} required error={errors.firstName} />
                 <FormField id="lastName" label="Last Name" value={editingUser.lastName} onChange={handleFormChange} required error={errors.lastName}/>
                 <FormField id="email" label="Email" type="email" value={editingUser.email} onChange={handleFormChange} required error={errors.email}/>
-                <FormField id="phone" label="Phone" value={editingUser.phone} onChange={handleFormChange} />
-                <FormField id="role" label="Role" as="select" value={editingUser.role} onChange={handleFormChange}>
-                    {Object.values(Role).map(role => <option key={role} value={role}>{role}</option>)}
-                </FormField>
-                <FormField id="jobTitle" label="Job Title" value={editingUser.jobTitle} onChange={handleFormChange} />
+                <FormField id="phone" label="Phone" value={editingUser.phone} onChange={handleFormChange} required error={errors.phone} />
+                <FormField id="dateOfJoining" label="Date of Joining" type="date" value={editingUser.dateOfJoining} onChange={handleFormChange} required error={errors.dateOfJoining} />
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Role <span className="text-red-500">*</span>
+                  </label>
+                  <SelectDropdown
+                    value={editingUser.role}
+                    onChange={(value) => setEditingUser({ ...editingUser, role: value as Role })}
+                    options={Object.values(Role).map(role => ({ value: role, label: role }))}
+                  />
+                  {errors.role && <p className="mt-1 text-sm text-red-600">{errors.role}</p>}
+                </div>
+                <FormField id="department" label="Department" value={editingUser.department} onChange={handleFormChange} required error={errors.department} />
+                <FormField id="jobTitle" label="Job Title" value={editingUser.jobTitle} onChange={handleFormChange} required error={errors.jobTitle} />
+                <FormField 
+                  id="experience" 
+                  label="Years of Experience" 
+                  type="number" 
+                  value={editingUser.experience?.toString() || ''} 
+                  onChange={(e) => setEditingUser({ ...editingUser, experience: e.target.value ? parseInt(e.target.value) : undefined })} 
+                  placeholder="e.g., 5"
+                />
+                <FormField 
+                  id="nativeLocation" 
+                  label="Native Location" 
+                  value={editingUser.nativeLocation || ''} 
+                  onChange={handleFormChange} 
+                  placeholder="e.g., New York, USA"
+                />
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Work Location
+                  </label>
+                  <SelectDropdown
+                    value={editingUser.workLocation || ''}
+                    onChange={(value) => setEditingUser({ ...editingUser, workLocation: value as WorkLocation })}
+                    options={[
+                      { value: '', label: 'Select Work Location' },
+                      ...Object.values(WorkLocation).map(loc => ({ value: loc, label: loc }))
+                    ]}
+                  />
+                </div>
             </div>
-            <FormField id="department" label="Department" value={editingUser.department} onChange={handleFormChange} />
+
+            {/* Skills Section */}
+            <div className="border-t pt-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Skills
+              </label>
+              <div className="flex gap-2 mb-3">
+                <input
+                  type="text"
+                  value={skillInput}
+                  onChange={(e) => setSkillInput(e.target.value)}
+                  onKeyPress={handleSkillKeyPress}
+                  placeholder="Add a skill (e.g., React, Python)"
+                  className="flex-grow p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={handleAddSkill}
+                  className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                >
+                  Add
+                </button>
+              </div>
+              {editingUser.skills && editingUser.skills.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {editingUser.skills.map((skill, index) => (
+                    <span
+                      key={index}
+                      className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
+                    >
+                      {skill}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveSkill(skill)}
+                        className="hover:text-blue-900 font-bold"
+                        title="Remove skill"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
           <div className="flex justify-end gap-2 mt-6">
             <button type="button" onClick={() => setIsEditModalOpen(false)} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300">Cancel</button>

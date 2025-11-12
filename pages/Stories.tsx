@@ -188,7 +188,7 @@ const Stories: React.FC = () => {
     return users.filter(u => team.memberIds.includes(u.id));
   }, [users, teams, newStoryData.assignedTeamId]);
   
-  const canCreateStory = currentUser ? settings.accessControl[currentUser.role].canCreateStory : false;
+  const canCreateStory = currentUser && settings?.accessControl?.[currentUser.role]?.canCreateStory === true;
 
   const today = new Date().toISOString().split('T')[0];
 

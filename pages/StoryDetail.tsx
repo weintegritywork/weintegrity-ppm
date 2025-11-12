@@ -28,11 +28,14 @@ const StoryDetail: React.FC = () => {
   
   const [workNoteSaveStatus, setWorkNoteSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const workNoteSaveTimeoutRef = useRef<number | null>(null);
+  const [uploadingFile, setUploadingFile] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
 
   if (!dataContext || !authContext || !toastContext || !settingsContext) return <div>Loading...</div>;
 
-  const { stories, users, teams, projects, updateStory, deleteStory, notifications, deleteNotification } = dataContext;
+  const { stories, users, teams, projects, updateStory, deleteStory, notifications, deleteNotification, fetchStoryChats } = dataContext;
   const { currentUser } = authContext;
   const { settings } = settingsContext;
   
@@ -43,6 +46,13 @@ const StoryDetail: React.FC = () => {
       setStory({ ...originalStory });
     }
   }, [originalStory]);
+
+  // Fetch chats when component mounts or when switching to Chat tab
+  useEffect(() => {
+    if (storyId && activeTab === 'Chat') {
+      fetchStoryChats(storyId);
+    }
+  }, [storyId, activeTab, fetchStoryChats]);
 
   useEffect(() => {
     if (currentUser && storyId) {
@@ -89,7 +99,7 @@ const StoryDetail: React.FC = () => {
 
 
   const permissions = useMemo(() => {
-    const defaultPerms = { canEdit: false, canDelete: false, canChangeState: false };
+    const defaultPerms = { canEdit: false, canDelete: false, canChangeState: false, canAddAttachments: false };
     if (!currentUser || !story) return defaultPerms;
 
     const userPermissions = settings.accessControl[currentUser.role];
@@ -99,13 +109,15 @@ const StoryDetail: React.FC = () => {
     const isOwner = project?.ownerId === currentUser.id;
     const myTeam = teams.find(t => t.leadId === currentUser.id);
     const isTeamLead = currentUser.role === Role.TeamLead && story.assignedTeamId === myTeam?.id;
-    const isAssigned = story.assignedToId === currentUser.id;
+    const isAssignedToStory = story.assignedToId === currentUser.id;
 
     const canEdit = userPermissions.canEditStory && (isAdmin || isOwner || isTeamLead);
     const canDelete = userPermissions.canDeleteStory && (isAdmin || isOwner);
-    const canChangeState = isAssigned || canEdit;
+    const canChangeState = isAssignedToStory || canEdit;
+    // Only the employee assigned to THIS STORY can add/delete attachments
+    const canAddAttachments = isAssignedToStory;
 
-    return { canEdit, canDelete, canChangeState };
+    return { canEdit, canDelete, canChangeState, canAddAttachments };
   }, [currentUser, story, teams, projects, settings]);
 
   
@@ -179,6 +191,118 @@ const StoryDetail: React.FC = () => {
       toastContext.addToast('Failed to delete story. Please try again.', 'error');
     }
   };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setUploadingFile(true);
+
+    try {
+      // Convert files to base64 data URLs (for demo purposes)
+      // In production, you would upload to a real file storage service
+      const newAttachments = await Promise.all(
+        Array.from(files).map(async (file) => {
+          return new Promise<{ name: string; url: string }>((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+              resolve({
+                name: file.name,
+                url: reader.result as string, // Base64 data URL
+              });
+            };
+            reader.readAsDataURL(file);
+          });
+        })
+      );
+
+      const updatedAttachments = [...(story.attachments || []), ...newAttachments];
+      
+      await updateStory(story.id, { 
+        attachments: updatedAttachments,
+        updatedById: currentUser!.id 
+      });
+      
+      setStory({ ...story, attachments: updatedAttachments });
+      toastContext.addToast(`${files.length} file(s) uploaded successfully!`, 'success');
+    } catch (error) {
+      toastContext.addToast('Failed to upload files. Please try again.', 'error');
+    } finally {
+      setUploadingFile(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handleDeleteAttachment = async (index: number) => {
+    if (!window.confirm('Are you sure you want to delete this attachment?')) return;
+
+    try {
+      const updatedAttachments = story.attachments?.filter((_, i) => i !== index) || [];
+      
+      await updateStory(story.id, { 
+        attachments: updatedAttachments,
+        updatedById: currentUser!.id 
+      });
+      
+      setStory({ ...story, attachments: updatedAttachments });
+      toastContext.addToast('Attachment deleted successfully!', 'success');
+    } catch (error) {
+      toastContext.addToast('Failed to delete attachment. Please try again.', 'error');
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+
+    const files = e.dataTransfer.files;
+    if (!files || files.length === 0) return;
+
+    setUploadingFile(true);
+
+    try {
+      const newAttachments = await Promise.all(
+        Array.from(files).map(async (file) => {
+          return new Promise<{ name: string; url: string }>((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+              resolve({
+                name: file.name,
+                url: reader.result as string,
+              });
+            };
+            reader.readAsDataURL(file);
+          });
+        })
+      );
+
+      const updatedAttachments = [...(story.attachments || []), ...newAttachments];
+      
+      await updateStory(story.id, { 
+        attachments: updatedAttachments,
+        updatedById: currentUser!.id 
+      });
+      
+      setStory({ ...story, attachments: updatedAttachments });
+      toastContext.addToast(`${files.length} file(s) uploaded successfully!`, 'success');
+    } catch (error) {
+      toastContext.addToast('Failed to upload files. Please try again.', 'error');
+    } finally {
+      setUploadingFile(false);
+    }
+  };
   
   const DetailItem: React.FC<{ label: string; children: React.ReactNode, className?: string }> = ({ label, children, className }) => (
     <div className={className}>
@@ -226,7 +350,111 @@ const StoryDetail: React.FC = () => {
           </div>
         );
       case 'Attachments':
-        return <div className="text-gray-500">Attachment functionality placeholder.</div>;
+        return (
+          <div className="space-y-4">
+            {permissions.canAddAttachments && (
+              <div 
+                className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+                  isDragging 
+                    ? 'border-blue-500 bg-blue-50' 
+                    : 'border-gray-300 hover:border-blue-400'
+                }`}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+              >
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                  multiple
+                />
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingFile}
+                  className="inline-flex items-center px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:bg-gray-400"
+                >
+                  {uploadingFile ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Uploading...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                      </svg>
+                      Upload Files
+                    </>
+                  )}
+                </button>
+                <p className="text-sm text-gray-500 mt-2">
+                  {isDragging ? 'Drop files here' : 'Click to browse or drag and drop files'}
+                </p>
+              </div>
+            )}
+            
+            {story.attachments && story.attachments.length > 0 ? (
+              <div className="space-y-2">
+                <h4 className="font-medium text-gray-700">Attached Files ({story.attachments.length})</h4>
+                <ul className="divide-y divide-gray-200 border border-gray-200 rounded-lg">
+                  {story.attachments.map((attachment, index) => (
+                    <li key={index} className="p-3 hover:bg-gray-50 flex items-center justify-between group">
+                      <div className="flex items-center flex-grow min-w-0">
+                        <svg className="w-5 h-5 text-gray-400 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                        </svg>
+                        <a
+                          href={attachment.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:underline truncate"
+                          title={attachment.name}
+                        >
+                          {attachment.name}
+                        </a>
+                      </div>
+                      <div className="flex items-center gap-2 ml-4 flex-shrink-0">
+                        <a
+                          href={attachment.url}
+                          download={attachment.name}
+                          className="text-gray-400 hover:text-blue-600 transition-colors"
+                          title="Download"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                          </svg>
+                        </a>
+                        {permissions.canAddAttachments && (
+                          <button
+                            onClick={() => handleDeleteAttachment(index)}
+                            className="text-gray-400 hover:text-red-600 transition-colors"
+                            title="Delete"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        )}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <svg className="w-12 h-12 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                </svg>
+                <p>No attachments yet</p>
+              </div>
+            )}
+          </div>
+        );
       case 'Audit Info':
         const updatedBy = getUserName(story.updatedById);
         return (

@@ -29,7 +29,7 @@ const ProjectDetail: React.FC = () => {
 
   if (!dataContext || !authContext || !settingsContext || !toastContext) return <div>Loading...</div>;
 
-  const { projects, users, stories, teams, updateProject, deleteProject, notifications, deleteNotification } = dataContext;
+  const { projects, users, stories, teams, updateProject, deleteProject, notifications, deleteNotification, fetchProjectChats } = dataContext;
   const { currentUser } = authContext;
   const { settings } = settingsContext;
   const { addToast } = toastContext;
@@ -46,6 +46,13 @@ const ProjectDetail: React.FC = () => {
         projectNotifications.forEach(n => deleteNotification(n.id));
     }
   }, [projectId, currentUser, notifications, deleteNotification]);
+
+  // Fetch project chats when component mounts
+  useEffect(() => {
+    if (projectId) {
+      fetchProjectChats(projectId);
+    }
+  }, [projectId, fetchProjectChats]);
 
   const projectMembers = useMemo(() => {
     return users.filter(u => project?.memberIds.includes(u.id));
@@ -124,8 +131,8 @@ const ProjectDetail: React.FC = () => {
     }
   };
 
-  const canEditProject = currentUser ? (settings.accessControl[currentUser.role].canEditProject && (currentUser.id === project.ownerId || currentUser.role === Role.Admin)) : false;
-  const canDeleteProject = currentUser ? (settings.accessControl[currentUser.role].canDeleteProject && (currentUser.id === project.ownerId || currentUser.role === Role.Admin)) : false;
+  const canEditProject = currentUser && settings?.accessControl?.[currentUser.role]?.canEditProject === true && (currentUser.id === project.ownerId || currentUser.role === Role.Admin);
+  const canDeleteProject = currentUser && settings?.accessControl?.[currentUser.role]?.canDeleteProject === true && (currentUser.id === project.ownerId || currentUser.role === Role.Admin);
 
 
   return (
@@ -273,9 +280,12 @@ const ProjectDetail: React.FC = () => {
                                 <input type="checkbox" id={`team-edit-${team.id}`} checked={editingProject.teamIds.includes(team.id)} onChange={() => handleTeamSelect(team.id)} className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" />
                                 <label htmlFor={`team-edit-${team.id}`} className="ml-3 block text-sm text-gray-700">
                                     {team.name}
+                                    {team.projectId && team.projectId !== project.id && (
+                                      <span className="ml-2 text-xs text-gray-400">(assigned to another project)</span>
+                                    )}
                                 </label>
                             </div>
-                        )) : <p className="text-gray-500 text-center text-sm p-2">No available teams.</p>}
+                        )) : <p className="text-gray-500 text-center text-sm p-2">No available teams. All teams are assigned to other projects.</p>}
                     </div>
                 </div>
             </div>

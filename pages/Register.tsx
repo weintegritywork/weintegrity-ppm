@@ -3,11 +3,11 @@ import React, { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DataContext } from '../context/DataContext';
 import { ToastContext } from '../context/ToastContext';
-import { User, Role } from '../types';
+import { User, Role, WorkLocation } from '../types';
 import { api } from '../utils/api';
 import Card from '../components/Card';
 import FormField from '../components/FormField';
-import { isEmailUnique } from '../utils/validators';
+import { isEmailUnique, isPhoneUnique } from '../utils/validators';
 import PageHeader from '../components/PageHeader';
 import SelectDropdown from '../components/SelectDropdown';
 
@@ -27,7 +27,13 @@ const Register: React.FC = () => {
     dateOfJoining: '',
     status: 'active',
     password: 'password123',
+    skills: [],
+    experience: undefined,
+    nativeLocation: '',
+    workLocation: undefined,
   });
+
+  const [skillInput, setSkillInput] = useState('');
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -52,6 +58,7 @@ const Register: React.FC = () => {
     if (!formData.email) newErrors.email = 'Email is required';
     else if (!isEmailUnique(formData.email, users)) newErrors.email = 'Email already exists';
     if (!formData.phone) newErrors.phone = 'Phone is required';
+    else if (!isPhoneUnique(formData.phone, users)) newErrors.phone = 'Phone number already exists';
     if (!formData.dateOfJoining) newErrors.dateOfJoining = 'Date of joining is required';
     if (!formData.password || formData.password.length < 6) {
       newErrors.password = 'Password must be at least 6 characters long.';
@@ -70,6 +77,34 @@ const Register: React.FC = () => {
   
   const handleRoleChange = (value: string) => {
     setFormData(prev => ({ ...prev, role: value as Role }));
+  };
+
+  const handleWorkLocationChange = (value: string) => {
+    setFormData(prev => ({ ...prev, workLocation: value as WorkLocation }));
+  };
+
+  const handleAddSkill = () => {
+    if (skillInput.trim() && !formData.skills?.includes(skillInput.trim())) {
+      setFormData(prev => ({
+        ...prev,
+        skills: [...(prev.skills || []), skillInput.trim()]
+      }));
+      setSkillInput('');
+    }
+  };
+
+  const handleRemoveSkill = (skillToRemove: string) => {
+    setFormData(prev => ({
+      ...prev,
+      skills: prev.skills?.filter(skill => skill !== skillToRemove)
+    }));
+  };
+
+  const handleSkillKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleAddSkill();
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -136,7 +171,80 @@ const Register: React.FC = () => {
             </div>
             <FormField id="department" label="Department" value={formData.department} onChange={handleChange} required error={errors.department} />
             <FormField id="jobTitle" label="Job Title" value={formData.jobTitle} onChange={handleChange} required error={errors.jobTitle} />
+            <FormField 
+              id="experience" 
+              label="Years of Experience" 
+              type="number" 
+              value={formData.experience?.toString() || ''} 
+              onChange={(e) => setFormData(prev => ({ ...prev, experience: e.target.value ? parseInt(e.target.value) : undefined }))} 
+              placeholder="e.g., 5"
+            />
+            <FormField 
+              id="nativeLocation" 
+              label="Native Location" 
+              value={formData.nativeLocation || ''} 
+              onChange={handleChange} 
+              placeholder="e.g., New York, USA"
+            />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Work Location
+              </label>
+              <SelectDropdown
+                value={formData.workLocation || ''}
+                onChange={handleWorkLocationChange}
+                options={[
+                  { value: '', label: 'Select Work Location' },
+                  ...Object.values(WorkLocation).map(loc => ({ value: loc, label: loc }))
+                ]}
+              />
+            </div>
           </div>
+
+          {/* Skills Section */}
+          <div className="border-t pt-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Skills
+            </label>
+            <div className="flex gap-2 mb-3">
+              <input
+                type="text"
+                value={skillInput}
+                onChange={(e) => setSkillInput(e.target.value)}
+                onKeyPress={handleSkillKeyPress}
+                placeholder="Add a skill (e.g., React, Python)"
+                className="flex-grow p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              />
+              <button
+                type="button"
+                onClick={handleAddSkill}
+                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+              >
+                Add
+              </button>
+            </div>
+            {formData.skills && formData.skills.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {formData.skills.map((skill, index) => (
+                  <span
+                    key={index}
+                    className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
+                  >
+                    {skill}
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveSkill(skill)}
+                      className="hover:text-blue-900 font-bold"
+                      title="Remove skill"
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+
           <div className="flex justify-end gap-2">
               <button type="button" onClick={() => navigate(-1)} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300">Cancel</button>
               <button type="submit" className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">Register</button>

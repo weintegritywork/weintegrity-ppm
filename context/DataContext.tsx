@@ -32,6 +32,8 @@ export interface DataContextType {
   markAllNotificationsAsRead: (userId: string) => Promise<void>;
   deleteNotification: (notificationId: string) => Promise<void>;
   refreshData: () => Promise<void>;
+  fetchStoryChats: (storyId: string) => Promise<void>;
+  fetchProjectChats: (projectId: string) => Promise<void>;
   isDataReady: boolean;
 }
 
@@ -73,18 +75,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       
       if (storiesRes.status === 'fulfilled' && storiesRes.value.data) {
         setStories(storiesRes.value.data);
-        // Fetch chats for all stories
-        const storyChatPromises = storiesRes.value.data.map(story => 
-          api.getStoryChats(story.id).then(res => ({ storyId: story.id, chat: res.data })).catch(() => ({ storyId: story.id, chat: null }))
-        );
-        const storyChatResults = await Promise.allSettled(storyChatPromises);
-        const chats: StoryChat = {};
-        storyChatResults.forEach((result) => {
-          if (result.status === 'fulfilled' && result.value.chat) {
-            chats[result.value.storyId] = result.value.chat.messages || [];
-          }
-        });
-        setStoryChats(chats);
+        // Don't fetch chats on initial load - fetch them when needed
+        setStoryChats({});
       } else {
         setStories([]);
         setStoryChats({});
@@ -99,22 +91,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if (notificationsRes.status === 'fulfilled' && notificationsRes.value.data) setNotifications(notificationsRes.value.data);
       else setNotifications([]);
 
-      // Fetch chats for all projects
-      if (projectsRes.status === 'fulfilled' && projectsRes.value.data) {
-        const projectChatPromises = projectsRes.value.data.map(project => 
-          api.getProjectChats(project.id).then(res => ({ projectId: project.id, chat: res.data })).catch(() => ({ projectId: project.id, chat: null }))
-        );
-        const projectChatResults = await Promise.allSettled(projectChatPromises);
-        const chats: ProjectChat = {};
-        projectChatResults.forEach((result) => {
-          if (result.status === 'fulfilled' && result.value.chat) {
-            chats[result.value.projectId] = result.value.chat.messages || [];
-          }
-        });
-        setProjectChats(chats);
-      } else {
-        setProjectChats({});
-      }
+      // Don't fetch chats on initial load - fetch them when needed
+      setProjectChats({});
     } catch (error) {
       console.error('Error fetching data:', error);
       // Set empty arrays on error to prevent UI from breaking
@@ -256,6 +234,54 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const result = await api.put<Team>('teams', teamId, { ...team, ...updatedData });
     if (result.data) {
       setTeams(prev => prev.map(t => t.id === teamId ? result.data! : t));
+      
+      // If memberIds changed, update user teamIds accordingly
+      if (updatedData.memberIds) {
+        const removedMembers = team.memberIds.filter(id => !updatedData.memberIds!.includes(id));
+        const addedMembers = updatedData.memberIds.filter(id => !team.memberIds.includes(id));
+        
+        setUsers(prev => prev.map(u => {
+          // Remove teamId from users who were removed from team
+          if (removedMembers.includes(u.id)) {
+            return { ...u, teamId: undefined };
+          }
+          // Add teamId to users who were added to team
+          if (addedMembers.includes(u.id)) {
+            return { ...u, teamId: teamId };
+          }
+          return u;
+        }));
+        
+        // Unassign removed members from team stories
+        if (removedMembers.length > 0) {
+          setStories(prev => prev.map(s => 
+            s.assignedTeamId === teamId && s.assignedToId && removedMembers.includes(s.assignedToId)
+              ? { ...s, assignedToId: undefined }
+              : s
+          ));
+        }
+      }
+      
+      // If projectId changed, update user projectIds accordingly
+      if (updatedData.projectId !== undefined) {
+        const newProjectId = updatedData.projectId;
+        const oldProjectId = team.projectId;
+        
+        // Update all team members' projectId
+        setUsers(prev => prev.map(u => {
+          if (team.memberIds.includes(u.id)) {
+            return { ...u, projectId: newProjectId || undefined };
+          }
+          return u;
+        }));
+        
+        // If project was removed, unassign team from project stories
+        if (!newProjectId && oldProjectId) {
+          setStories(prev => prev.map(s => 
+            s.assignedTeamId === teamId ? { ...s, assignedTeamId: undefined, assignedToId: undefined } : s
+          ));
+        }
+      }
     } else {
       throw new Error(result.error || 'Failed to update team');
     }
@@ -298,14 +324,18 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const result = await api.post<Project>('projects', project);
     if (result.data) {
       setProjects(prev => [...prev, result.data!]);
-      setUsers(prev => prev.map(u => 
-        project.memberIds.includes(u.id) ? { ...u, projectId: project.id } : u
-      ));
+      
+      // Update teams with projectId first
       if (teamIds.length > 0) {
         await Promise.all(teamIds.map(teamId => updateTeam(teamId, { projectId: project.id })));
       }
       
-      // Create notifications for project members (excluding owner if they're in memberIds)
+      // Update users with projectId (this will be done by updateTeam, but we ensure it here too)
+      setUsers(prev => prev.map(u => 
+        project.memberIds.includes(u.id) ? { ...u, projectId: project.id } : u
+      ));
+      
+      // Create notifications for project members (excluding owner)
       const membersToNotify = project.memberIds.filter(id => id !== project.ownerId);
       for (const userId of membersToNotify) {
         await addNotification({
@@ -315,6 +345,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         });
       }
     } else {
+      console.error('DataContext: API error', result.error);
       throw new Error(result.error || 'Failed to add project');
     }
   };
@@ -353,7 +384,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         .filter(team => newTeamIds.includes(team.id))
         .flatMap(team => team.memberIds);
       const finalOwnerId = projectData.ownerId ?? project.ownerId;
-      finalMemberIds = Array.from(new Set([...membersFromTeams, finalOwnerId].filter(Boolean) as string[]));
+      // Only add ownerId if it exists
+      const ownerIds = finalOwnerId ? [finalOwnerId] : [];
+      finalMemberIds = Array.from(new Set([...membersFromTeams, ...ownerIds].filter(Boolean) as string[]));
     }
 
     const result = await api.put<Project>('projects', projectId, { 
@@ -409,12 +442,26 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const result = await api.post<Story>('stories', story);
     if (result.data) {
       setStories(prev => [...prev, result.data!]);
+      
+      // Notify assigned user
       if (story.assignedToId) {
         await addNotification({
           userId: story.assignedToId,
           message: `You have been assigned a new story: "${story.shortDescription}"`,
           link: `/stories/${story.id}`
         });
+      }
+      
+      // Notify team lead if story is assigned to a team
+      if (story.assignedTeamId && !story.assignedToId) {
+        const assignedTeam = teams.find(t => t.id === story.assignedTeamId);
+        if (assignedTeam && assignedTeam.leadId) {
+          await addNotification({
+            userId: assignedTeam.leadId,
+            message: `A new story has been assigned to your team: "${story.shortDescription}"`,
+            link: `/stories/${story.id}`
+          });
+        }
       }
     } else {
       throw new Error(result.error || 'Failed to add story');
@@ -434,13 +481,25 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (result.data) {
       setStories(prev => prev.map(s => s.id === storyId ? result.data! : s));
       
-      // Notification for re-assignment
+      // Notification for user re-assignment
       if (updatedData.assignedToId && originalStory.assignedToId !== updatedData.assignedToId) {
         await addNotification({
           userId: updatedData.assignedToId,
           message: `You were assigned to story: "${originalStory.shortDescription}"`,
           link: `/stories/${storyId}`
         });
+      }
+      
+      // Notification for team assignment (notify team lead)
+      if (updatedData.assignedTeamId && originalStory.assignedTeamId !== updatedData.assignedTeamId) {
+        const assignedTeam = teams.find(t => t.id === updatedData.assignedTeamId);
+        if (assignedTeam && assignedTeam.leadId && assignedTeam.leadId !== updatedData.assignedToId) {
+          await addNotification({
+            userId: assignedTeam.leadId,
+            message: `Story "${originalStory.shortDescription}" was assigned to your team`,
+            link: `/stories/${storyId}`
+          });
+        }
       }
     } else {
       throw new Error(result.error || 'Failed to update story');
@@ -530,12 +589,47 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
+  const fetchStoryChats = async (storyId: string) => {
+    // Only fetch if not already loaded
+    if (storyChats[storyId]) return;
+    
+    try {
+      const res = await api.getStoryChats(storyId);
+      if (res.data) {
+        setStoryChats(prev => ({
+          ...prev,
+          [storyId]: res.data.messages || []
+        }));
+      }
+    } catch (error) {
+      console.error(`Error fetching chats for story ${storyId}:`, error);
+    }
+  };
+
+  const fetchProjectChats = async (projectId: string) => {
+    // Only fetch if not already loaded
+    if (projectChats[projectId]) return;
+    
+    try {
+      const res = await api.getProjectChats(projectId);
+      if (res.data) {
+        setProjectChats(prev => ({
+          ...prev,
+          [projectId]: res.data.messages || []
+        }));
+      }
+    } catch (error) {
+      console.error(`Error fetching chats for project ${projectId}:`, error);
+    }
+  };
+
   const value: DataContextType = {
     users, teams, projects, stories, epics, sprints, storyChats, projectChats, notifications,
     addUser, updateUser, deleteUser, addTeam, updateTeam, deleteTeam, addMembersToTeam, 
     addProject, updateProject, deleteProject, addStory, updateStory, deleteStory,
     addChatMessage, deleteChatMessage, addNotification, markNotificationAsRead, 
     markAllNotificationsAsRead, deleteNotification, refreshData, isDataReady,
+    fetchStoryChats, fetchProjectChats,
   };
 
   return (

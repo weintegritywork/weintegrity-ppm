@@ -6,6 +6,12 @@ export enum Role {
   ProductOwner = 'ProductOwner',
 }
 
+export enum WorkLocation {
+  Remote = 'Remote',
+  WFH = 'Work From Home',
+  WFO = 'Work From Office',
+}
+
 export interface User {
   id: string;
   employeeId: string;
@@ -25,6 +31,11 @@ export interface User {
   teamId?: string;
   projectId?: string;
   status: 'active' | 'inactive';
+  // New fields
+  skills?: string[];
+  experience?: number; // years of experience
+  nativeLocation?: string;
+  workLocation?: WorkLocation;
 }
 
 export interface Team {
@@ -45,7 +56,7 @@ export enum ProjectStatus {
 export interface Project {
   id: string;
   name: string;
-  ownerId: string;
+  ownerId?: string;
   startDate: string;
   endDate: string;
   description: string;

@@ -269,25 +269,29 @@ class DevSeedView(APIView):
                     'StoryType': {
                         'Feature': 'Feature', 'Defect': 'Defect', 'Enhancement': 'Enhancement'
                     },
+                    'WorkLocation': {
+                        'WFO': 'WFO', 'WFH': 'WFH', 'Remote': 'Remote'
+                    },
                 }
                 for enum_name, values in enum_maps.items():
                     for k, v in values.items():
-                        text = re.sub(rf"{enum_name}\\.{k}\b", f'"{v}"', text)
+                        # Use simple string replacement for enum values
+                        text = text.replace(f'{enum_name}.{k}', f'"{v}"')
+                # Remove TypeScript type assertions like "as ProjectStatus"
+                text = re.sub(r'\s+as\s+\w+', '', text)
                 return text
 
             def ts_literal_to_json(text: str) -> str:
-                # Convert enums like Role.Admin → "Admin"
-                text = ts_enums_to_strings(text)
-                # Quote unquoted keys: { id: "x" } → { "id": "x" }
+                # Quote unquoted keys FIRST: { id: "x" } → { "id": "x" }
                 text = re.sub(r'(\{|,)\s*([A-Za-z_][A-Za-z0-9_]*)\s*:', r'\1 "\2":', text)
                 # Single quotes → double quotes
                 text = text.replace("'", '"')
+                # NOW convert enums after keys are quoted
+                text = ts_enums_to_strings(text)
                 # Trailing commas in objects/arrays
                 text = re.sub(r',\s*(\]|\})', r'\1', text)
                 # undefined → null
                 text = text.replace('undefined', 'null')
-                # One more enum replacement pass in case quoting introduced tokens inside strings
-                text = ts_enums_to_strings(text)
                 return text
 
             # Extract each section explicitly from TS file
