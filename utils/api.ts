@@ -1,4 +1,6 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://weintegrity-ppm.onrender.com';
+const API_BASE_URL = import.meta.env.VITE_API_URL 
+  ? import.meta.env.VITE_API_URL 
+  : 'https://weintegrity-ppm.onrender.com/api';
 
 export interface ApiResponse<T> {
   data?: T;
