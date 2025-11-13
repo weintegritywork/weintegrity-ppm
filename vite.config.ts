@@ -17,9 +17,10 @@ export default defineConfig(({ mode }) => {
         }
       },
       preview: {
-        host: '0.0.0.0',
+        host: true,
         port: 3000,
         strictPort: false,
+        allowedHosts: ['weintegrity-frontend.onrender.com'],
       },
       plugins: [react()],
       define: {
