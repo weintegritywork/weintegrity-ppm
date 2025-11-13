@@ -1,6 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL 
-  ? import.meta.env.VITE_API_URL 
-  : 'https://weintegrity-ppm.onrender.com/api';
+import { API_BASE_URL } from '../config';
 
 export interface ApiResponse<T> {
   data?: T;
