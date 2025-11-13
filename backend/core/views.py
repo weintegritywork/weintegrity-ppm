@@ -10,6 +10,42 @@ import random
 from datetime import datetime, timedelta
 from django.contrib.auth.hashers import make_password, check_password
 from .permissions import IsAdminOrPOForWrites, IsAdminForUserWrites
+import sib_api_v3_sdk
+from sib_api_v3_sdk.rest import ApiException
+
+
+def send_otp_email(to_email, otp):
+    """Send OTP email using Brevo (Sendinblue)"""
+    api_key = os.getenv('BREVO_API_KEY')
+    if not api_key:
+        raise Exception('BREVO_API_KEY not configured')
+    
+    configuration = sib_api_v3_sdk.Configuration()
+    configuration.api_key['api-key'] = api_key
+    
+    api_instance = sib_api_v3_sdk.TransactionalEmailsApi(sib_api_v3_sdk.ApiClient(configuration))
+    
+    send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(
+        to=[{"email": to_email}],
+        sender={"email": "noreply@weintegrity.com", "name": "WEIntegrity"},
+        subject="Password Reset Code",
+        html_content=f"""
+        <html>
+            <body>
+                <h2>Password Reset Request</h2>
+                <p>Your password reset code is:</p>
+                <h1 style="color: #4F46E5; font-size: 32px; letter-spacing: 5px;">{otp}</h1>
+                <p>This code will expire in 10 minutes.</p>
+                <p>If you didn't request this, please ignore this email.</p>
+            </body>
+        </html>
+        """
+    )
+    
+    try:
+        api_instance.send_transac_email(send_smtp_email)
+    except ApiException as e:
+        raise Exception(f'Brevo API error: {e}')
 
 
 def collection(name):
@@ -115,9 +151,16 @@ class ForgotPasswordView(APIView):
             'created_at': datetime.utcnow()
         })
         
-        # In production, send email here
-        # For development, log OTP to console (remove in production)
-        print(f'[DEV] OTP for {email}: {otp}')  # Only for development - remove in production
+        # Send email with OTP
+        try:
+            send_otp_email(email, otp)
+        except Exception as e:
+            # Log error but don't reveal to user
+            print(f'[ERROR] Failed to send OTP email: {e}')
+        
+        # For development, also log OTP to console
+        if settings.DEBUG:
+            print(f'[DEV] OTP for {email}: {otp}')
         
         return Response({
             'message': 'If an account exists with this email, a reset code has been sent.'
