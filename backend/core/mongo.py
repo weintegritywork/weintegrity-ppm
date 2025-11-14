@@ -13,15 +13,24 @@ def get_client() -> MongoClient:
     uri = os.getenv('MONGO_URI', 'mongodb://localhost:27017')
     use_mock = os.getenv('USE_MONGOMOCK', 'true').lower() == 'true'
     logger = logging.getLogger(__name__)
+    
+    # Debug logging
+    print(f"[DEBUG] MONGO_URI from env: {uri}")
+    print(f"[DEBUG] USE_MONGOMOCK from env: {use_mock}")
+    
     try:
-        client = MongoClient(uri, serverSelectionTimeoutMS=2000)
+        client = MongoClient(uri, serverSelectionTimeoutMS=5000)
         # trigger a selection attempt
         client.admin.command('ping')
         logger.info("Connected to MongoDB at %s (real instance)", uri)
+        print(f"[SUCCESS] Connected to MongoDB Atlas!")
         _CLIENT = client
         return _CLIENT
     except Exception as exc:
+        print(f"[ERROR] MongoDB connection failed: {exc}")
+        logger.error("MongoDB connection to %s failed: %s", uri, exc)
         if not use_mock:
+            print("[ERROR] USE_MONGOMOCK is false, raising exception")
             raise
         try:
             import mongomock
@@ -30,6 +39,7 @@ def get_client() -> MongoClient:
                 uri,
                 exc,
             )
+            print("[WARNING] Falling back to mongomock (in-memory database)")
             _CLIENT = mongomock.MongoClient()
             return _CLIENT
         except Exception as mock_exc:
@@ -41,7 +51,8 @@ def get_client() -> MongoClient:
 
 def get_db():
     client = get_client()
-    db_name = os.getenv('MONGO_DBNAME', 'weintegration_db')
+    db_name = os.getenv('MONGO_DBNAME', 'weintegrity')
+    print(f"[DEBUG] Using database: {db_name}")
     return client[db_name]
 
 
