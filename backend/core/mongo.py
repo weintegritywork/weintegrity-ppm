@@ -11,8 +11,8 @@ def get_client() -> MongoClient:
     if _CLIENT is not None:
         return _CLIENT
     uri = os.getenv('MONGO_URI', 'mongodb://localhost:27017')
-    # Only use mock if explicitly set to true AND no MONGO_URI is provided
-    use_mock = os.getenv('USE_MONGOMOCK', 'false').lower() == 'true' and uri == 'mongodb://localhost:27017'
+    # Use mock if explicitly set to true
+    use_mock = os.getenv('USE_MONGOMOCK', 'false').lower() == 'true'
     logger = logging.getLogger(__name__)
     
     # Debug logging
