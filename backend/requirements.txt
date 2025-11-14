@@ -3,7 +3,7 @@ djangorestframework==3.16.1
 djangorestframework-simplejwt==5.5.1
 django-cors-headers==4.9.0
 drf-spectacular==0.29.0
-pymongo[srv]==4.10.1
+pymongo[srv]==3.12.3
 PyJWT==2.10.1
 pytz==2025.2
 mongomock==4.3.0
