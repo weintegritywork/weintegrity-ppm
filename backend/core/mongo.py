@@ -20,14 +20,14 @@ def get_client() -> MongoClient:
     print(f"[DEBUG] USE_MONGOMOCK from env: {use_mock}")
     
     try:
-        import ssl
         client = MongoClient(
             uri,
             serverSelectionTimeoutMS=20000,
             connectTimeoutMS=20000,
             socketTimeoutMS=20000,
-            ssl=True,
-            ssl_cert_reqs=ssl.CERT_NONE
+            tls=True,
+            tlsAllowInvalidCertificates=True,
+            tlsInsecure=True
         )
         # trigger a selection attempt
         client.admin.command('ping')
