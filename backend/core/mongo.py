@@ -26,8 +26,7 @@ def get_client() -> MongoClient:
             connectTimeoutMS=20000,
             socketTimeoutMS=20000,
             tls=True,
-            tlsAllowInvalidCertificates=True,
-            tlsInsecure=True
+            tlsAllowInvalidCertificates=True
         )
         # trigger a selection attempt
         client.admin.command('ping')
