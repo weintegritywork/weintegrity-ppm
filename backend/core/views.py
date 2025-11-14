@@ -275,7 +275,8 @@ class DevSeedView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
-        if not settings.DEBUG:
+        allow_seed = os.getenv('ALLOW_SEED', 'false').lower() == 'true'
+        if not settings.DEBUG and not allow_seed:
             return Response({'detail': 'Not allowed'}, status=403)
         # Attempt to parse frontend seedData.ts
         root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
