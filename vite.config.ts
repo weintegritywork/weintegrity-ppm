@@ -16,12 +16,7 @@ export default defineConfig(({ mode }) => {
           }
         }
       },
-      preview: {
-        host: true,
-        port: 3000,
-        strictPort: false,
-        allowedHosts: ['weintegrity-frontend.onrender.com'],
-      },
+
       plugins: [react()],
       define: {
         'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),

@@ -20,13 +20,7 @@ def get_client() -> MongoClient:
     print(f"[DEBUG] USE_MONGOMOCK from env: {use_mock}")
     
     try:
-        # Add SSL/TLS parameters to fix handshake issues on Render
-        client = MongoClient(
-            uri, 
-            serverSelectionTimeoutMS=5000,
-            tls=True,
-            tlsAllowInvalidCertificates=True
-        )
+        client = MongoClient(uri, serverSelectionTimeoutMS=5000)
         # trigger a selection attempt
         client.admin.command('ping')
         logger.info("Connected to MongoDB at %s (real instance)", uri)
