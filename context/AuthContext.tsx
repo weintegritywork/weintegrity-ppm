@@ -24,23 +24,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const token = localStorage.getItem('authToken');
       
       if (storedUser && token) {
-        // Verify token is still valid by trying to refresh
-        try {
-          const refreshResult = await api.refreshToken();
-          if (refreshResult.data && !refreshResult.error) {
-            setCurrentUser(storedUser);
-          } else {
-            // Token invalid, clear storage
-            localStorage.removeItem('currentUser');
-            localStorage.removeItem('authToken');
-            api.logout();
-          }
-        } catch (error) {
-          // Token invalid or network error, clear storage
-          localStorage.removeItem('currentUser');
-          localStorage.removeItem('authToken');
-          api.logout();
-        }
+        // Trust the stored token - it will be validated on first API call
+        setCurrentUser(storedUser);
       }
       setIsAuthReady(true);
     };
