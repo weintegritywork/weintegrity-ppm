@@ -33,10 +33,7 @@ const Navbar: React.FC = () => {
     .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
   const unreadCount = userNotifications.filter(n => !n.isRead).length;
 
-  const handleNotificationClick = (notificationId: string, e?: React.MouseEvent) => {
-    if (e) {
-      e.preventDefault();
-    }
+  const handleNotificationClick = (notificationId: string) => {
     deleteNotification(notificationId);
   };
 
@@ -115,7 +112,7 @@ const Navbar: React.FC = () => {
                   >
                     <Link
                       to={n.link}
-                      onClick={(e) => handleNotificationClick(n.id, e)}
+                      onClick={() => handleNotificationClick(n.id)}
                       className="block px-4 py-3 pr-10 text-sm text-gray-700"
                     >
                       <p className={`${!n.isRead ? 'font-semibold text-gray-900' : 'font-normal text-gray-700'}`}>
