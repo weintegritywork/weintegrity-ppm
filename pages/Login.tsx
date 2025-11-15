@@ -32,6 +32,7 @@ const Login: React.FC = () => {
   const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
   const [isOtpVerified, setIsOtpVerified] = useState(false);
   const [isResettingPassword, setIsResettingPassword] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
 
   const maintenanceMode = settingsContext?.settings.maintenanceMode || false;
 
@@ -88,11 +89,57 @@ const Login: React.FC = () => {
         setIsOtpVerified(false); // Reset OTP verification state
         setOtp(''); // Clear any previous OTP
         
+        // Start cooldown timer
+        setResendCooldown(60);
+        const timer = setInterval(() => {
+          setResendCooldown((prev) => {
+            if (prev <= 1) {
+              clearInterval(timer);
+              return 0;
+            }
+            return prev - 1;
+          });
+        }, 1000);
+        
         toastContext?.addToast(result.data?.message || 'If an account exists with this email, a reset code has been sent. Please check your email.', 'success');
         setView('RESET_PASSWORD');
       }
     } catch (error) {
       toastContext?.addToast('Failed to request password reset. Please try again.', 'error');
+    } finally {
+      setIsRequestingOtp(false);
+    }
+  };
+  
+  const handleResendOtp = async () => {
+    if (resendCooldown > 0) return;
+    
+    setIsRequestingOtp(true);
+    try {
+      const result = await api.forgotPassword(resetEmail);
+      
+      if (result.error) {
+        toastContext?.addToast(result.error, 'error');
+      } else {
+        setIsOtpVerified(false);
+        setOtp('');
+        
+        // Start cooldown timer
+        setResendCooldown(60);
+        const timer = setInterval(() => {
+          setResendCooldown((prev) => {
+            if (prev <= 1) {
+              clearInterval(timer);
+              return 0;
+            }
+            return prev - 1;
+          });
+        }, 1000);
+        
+        toastContext?.addToast('A new OTP has been sent to your email.', 'success');
+      }
+    } catch (error) {
+      toastContext?.addToast('Failed to resend OTP. Please try again.', 'error');
     } finally {
       setIsRequestingOtp(false);
     }
@@ -247,6 +294,24 @@ const Login: React.FC = () => {
                     OTP verified successfully
                   </p>
                 )}
+                <div className="mt-2 text-center">
+                  <button
+                    type="button"
+                    onClick={handleResendOtp}
+                    disabled={resendCooldown > 0 || isRequestingOtp}
+                    className={`text-sm ${
+                      resendCooldown > 0 || isRequestingOtp
+                        ? 'text-gray-400 cursor-not-allowed'
+                        : 'text-blue-600 hover:underline'
+                    }`}
+                  >
+                    {resendCooldown > 0
+                      ? `Resend OTP in ${resendCooldown}s`
+                      : isRequestingOtp
+                      ? 'Sending...'
+                      : 'Resend OTP'}
+                  </button>
+                </div>
               </div>
               <FormField 
                 label="New Password" 
