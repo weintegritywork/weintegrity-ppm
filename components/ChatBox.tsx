@@ -49,10 +49,25 @@ const ChatBox: React.FC<ChatBoxProps> = ({ chatId, chatType, permissions }) => {
     };
 
     if (attachment) {
-      message.attachment = {
-        name: attachment.name,
-        url: '#', // Mock URL for frontend-only app
+      // Convert file to base64 data URL for storage
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        message.attachment = {
+          name: attachment.name,
+          url: reader.result as string,
+        };
+        
+        try {
+          await addChatMessage(chatId, chatType, message);
+          setNewMessage('');
+          setAttachment(null);
+          if(fileInputRef.current) fileInputRef.current.value = '';
+        } catch (error) {
+          addToast('Failed to send message. Please try again.', 'error');
+        }
       };
+      reader.readAsDataURL(attachment);
+      return;
     }
     
     try {
@@ -111,12 +126,28 @@ const ChatBox: React.FC<ChatBoxProps> = ({ chatId, chatType, permissions }) => {
                     </div>
                     {msg.text && <p className="text-sm mt-1 break-words">{msg.text}</p>}
                     {msg.attachment && (
-                      <div className={`mt-2 p-2 rounded-md flex items-center gap-2 ${isCurrentUser ? 'bg-blue-600' : 'bg-gray-100'}`}>
-                        <svg xmlns="http://www.w3.org/2000/svg" className={`h-5 w-5 flex-shrink-0 ${isCurrentUser ? 'text-blue-100' : 'text-gray-500'}`} viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M8 4a3 3 0 00-3 3v4a3 3 0 006 0V7a3 3 0 00-3-3zM7 7a1 1 0 012 0v4a1 1 0 11-2 0V7z" clipRule="evenodd" />
-                          <path d="M4 8V7a1 1 0 011-1h12a1 1 0 110 2H5a1 1 0 01-1-1z" />
-                        </svg>
-                        <a href={msg.attachment.url} title={msg.attachment.name} className={`text-sm truncate ${isCurrentUser ? 'text-white hover:underline' : 'text-blue-600 hover:underline'}`}>{msg.attachment.name}</a>
+                      <div className={`mt-2 p-2 rounded-md ${isCurrentUser ? 'bg-blue-600' : 'bg-gray-100'}`}>
+                        {msg.attachment.name.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
+                          <img 
+                            src={msg.attachment.url} 
+                            alt={msg.attachment.name}
+                            className="max-w-full h-auto rounded cursor-pointer hover:opacity-90"
+                            onClick={() => window.open(msg.attachment!.url, '_blank')}
+                          />
+                        ) : (
+                          <div className="flex items-center gap-2 cursor-pointer" onClick={() => {
+                            const link = document.createElement('a');
+                            link.href = msg.attachment!.url;
+                            link.download = msg.attachment!.name;
+                            link.click();
+                          }}>
+                            <svg xmlns="http://www.w3.org/2000/svg" className={`h-5 w-5 flex-shrink-0 ${isCurrentUser ? 'text-blue-100' : 'text-gray-500'}`} viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M8 4a3 3 0 00-3 3v4a3 3 0 006 0V7a3 3 0 00-3-3zM7 7a1 1 0 012 0v4a1 1 0 11-2 0V7z" clipRule="evenodd" />
+                              <path d="M4 8V7a1 1 0 011-1h12a1 1 0 110 2H5a1 1 0 01-1-1z" />
+                            </svg>
+                            <span className={`text-sm truncate ${isCurrentUser ? 'text-white hover:underline' : 'text-blue-600 hover:underline'}`}>{msg.attachment.name}</span>
+                          </div>
+                        )}
                       </div>
                     )}
                     <div className="text-xs opacity-60 text-right mt-2">
