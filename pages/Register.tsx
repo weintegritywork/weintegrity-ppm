@@ -36,6 +36,7 @@ const Register: React.FC = () => {
   const [skillInput, setSkillInput] = useState('');
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isRegistering, setIsRegistering] = useState(false);
 
   if (!dataContext || !toastContext) return null;
   const { users, addUser } = dataContext;
@@ -114,6 +115,7 @@ const Register: React.FC = () => {
       return;
     }
 
+    setIsRegistering(true);
     try {
       const newEmployeeId = generateEmployeeId(users);
       const newUser: User = {
@@ -139,6 +141,8 @@ const Register: React.FC = () => {
       navigate('/employees');
     } catch (error) {
       toastContext.addToast('Failed to register employee. Please try again.', 'error');
+    } finally {
+      setIsRegistering(false);
     }
   };
 
@@ -246,8 +250,10 @@ const Register: React.FC = () => {
           </div>
 
           <div className="flex justify-end gap-2">
-              <button type="button" onClick={() => navigate(-1)} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300">Cancel</button>
-              <button type="submit" className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">Register</button>
+              <button type="button" onClick={() => navigate(-1)} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300" disabled={isRegistering}>Cancel</button>
+              <button type="submit" className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-blue-300 disabled:cursor-not-allowed" disabled={isRegistering}>
+                {isRegistering ? 'Registering...' : 'Register'}
+              </button>
           </div>
         </form>
       </Card>
