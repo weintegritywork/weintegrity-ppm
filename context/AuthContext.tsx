@@ -21,7 +21,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     // Check for stored user and token on mount
     const initAuth = async () => {
       const storedUser = getFromLocalStorage<User>('currentUser');
-      const token = localStorage.getItem('authToken');
+      const token = sessionStorage.getItem('authToken');
       
       if (storedUser && token) {
         // Trust the stored token - it will be validated on first API call
@@ -34,12 +34,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, []);
 
   useEffect(() => {
-    // Sync currentUser to localStorage
+    // Sync currentUser to sessionStorage
     if (isAuthReady) {
       if (currentUser) {
         saveToLocalStorage('currentUser', currentUser);
       } else {
-        localStorage.removeItem('currentUser');
+        sessionStorage.removeItem('currentUser');
       }
     }
   }, [currentUser, isAuthReady]);

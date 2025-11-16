@@ -8,14 +8,14 @@ export interface ApiResponse<T> {
 
 class ApiService {
   private getAuthToken(): string | null {
-    return localStorage.getItem('authToken');
+    return sessionStorage.getItem('authToken');
   }
 
   private setAuthToken(token: string | null): void {
     if (token) {
-      localStorage.setItem('authToken', token);
+      sessionStorage.setItem('authToken', token);
     } else {
-      localStorage.removeItem('authToken');
+      sessionStorage.removeItem('authToken');
     }
   }
 
@@ -56,7 +56,7 @@ class ApiService {
           this.setAuthToken(null);
           // Clear user data if token is invalid
           if (typeof window !== 'undefined') {
-            localStorage.removeItem('currentUser');
+            sessionStorage.removeItem('currentUser');
           }
         }
         return {
