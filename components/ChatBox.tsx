@@ -1,5 +1,4 @@
 import React, { useContext, useState, useRef, useEffect } from 'react';
-import ReactDOM from 'react-dom';
 import { DataContext } from '../context/DataContext';
 import { AuthContext } from '../context/AuthContext';
 import { ToastContext } from '../context/ToastContext';
@@ -155,12 +154,27 @@ const ChatBox: React.FC<ChatBoxProps> = ({ chatId, chatType, permissions }) => {
                     {msg.attachment && (
                       <div className={`mt-2 p-2 rounded-md ${isCurrentUser ? 'bg-blue-600' : 'bg-gray-100'}`}>
                         {msg.attachment.name.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
-                          <img 
-                            src={msg.attachment.url} 
-                            alt={msg.attachment.name}
-                            className="max-w-full h-auto rounded cursor-pointer hover:opacity-90 transition-opacity"
-                            onClick={() => setImagePreview({url: msg.attachment!.url, name: msg.attachment!.name})}
-                          />
+                          <div>
+                            <img 
+                              src={msg.attachment.url} 
+                              alt={msg.attachment.name}
+                              className={`rounded transition-all duration-300 ${
+                                imagePreview?.url === msg.attachment.url 
+                                  ? 'max-w-full h-auto cursor-zoom-out' 
+                                  : 'max-w-[200px] h-auto cursor-zoom-in hover:opacity-90'
+                              }`}
+                              onClick={() => {
+                                if (imagePreview?.url === msg.attachment!.url) {
+                                  setImagePreview(null);
+                                } else {
+                                  setImagePreview({url: msg.attachment!.url, name: msg.attachment!.name});
+                                }
+                              }}
+                            />
+                            {imagePreview?.url === msg.attachment.url && (
+                              <p className="text-xs mt-1 opacity-75">Click image to minimize</p>
+                            )}
+                          </div>
                         ) : (
                           <div className="flex items-center gap-2 cursor-pointer" onClick={() => {
                             const link = document.createElement('a');
@@ -269,34 +283,7 @@ const ChatBox: React.FC<ChatBoxProps> = ({ chatId, chatType, permissions }) => {
         <p className="text-gray-600">Are you sure you want to permanently delete this message? This action cannot be undone.</p>
       </Modal>
       
-      {/* Image Preview Modal */}
-      {imagePreview && ReactDOM.createPortal(
-        <div
-          className="fixed top-0 left-0 w-full h-full bg-black bg-opacity-75 flex justify-center items-center"
-          style={{ zIndex: 9999 }}
-          onClick={() => setImagePreview(null)}
-        >
-          <div className="relative">
-            <button
-              onClick={() => setImagePreview(null)}
-              className="absolute -top-12 right-0 text-white hover:text-gray-300 text-lg font-semibold bg-black bg-opacity-50 px-4 py-2 rounded"
-            >
-              ✕ Close
-            </button>
-            <img 
-              src={imagePreview.url} 
-              alt={imagePreview.name}
-              style={{ 
-                maxWidth: '90vw', 
-                maxHeight: '85vh', 
-                objectFit: 'contain',
-                display: 'block'
-              }}
-            />
-          </div>
-        </div>,
-        document.body
-      )}
+
     </>
   );
 };
