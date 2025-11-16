@@ -4,6 +4,7 @@ import { AuthContext } from './context/AuthContext';
 import { SettingsContext } from './context/SettingsContext';
 import { ToastContext } from './context/ToastContext';
 import { DataContext } from './context/DataContext';
+import { ThemeProvider } from './context/ThemeContext';
 
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -103,8 +104,9 @@ const App: React.FC = () => {
   const announcement = settings.announcement;
 
   return (
-    <HashRouter>
-      <div className="flex h-screen bg-gray-100 text-gray-800">
+    <ThemeProvider>
+      <HashRouter>
+        <div className="flex h-screen bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100 transition-colors">
         {currentUser && !isMaintenance && <Sidebar />}
         <div className="flex-1 flex flex-col overflow-hidden">
           {currentUser && !isMaintenance && <Navbar />}
@@ -150,9 +152,10 @@ const App: React.FC = () => {
              )}
           </main>
         </div>
-      </div>
-      <ToastContainer />
-    </HashRouter>
+        </div>
+        <ToastContainer />
+      </HashRouter>
+    </ThemeProvider>
   );
 };
 
