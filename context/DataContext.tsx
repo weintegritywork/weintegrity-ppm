@@ -369,6 +369,12 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }),
         ...teamsToAssign.map(teamId => updateTeam(teamId, { projectId: projectId })),
       ]);
+      
+      // Refresh teams data from server to ensure consistency
+      const teamsRes = await api.get<Team[]>('teams');
+      if (teamsRes.data) {
+        setTeams(teamsRes.data);
+      }
     }
 
     // Recalculate memberIds if teams changed

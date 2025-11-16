@@ -333,13 +333,30 @@ class BaseCrudView(APIView):
             # Check if password is already hashed
             if not str(data['password']).startswith('pbkdf2_'):
                 data['password'] = make_password(data['password'])
-        # Remove None/undefined values and prepare update
-        update_data = {k: v for k, v in data.items() if v is not None}
-        # If we want to unset fields, we need to handle them separately
-        # For now, we'll only update fields that have values
-        res = coll.update_one({'id': id}, {'$set': update_data})
-        if res.matched_count == 0:
-            return Response(status=404)
+        
+        # Separate fields to set and fields to unset
+        update_data = {}
+        unset_data = {}
+        
+        for k, v in data.items():
+            if v is None:
+                # Explicitly unset fields that are None/null
+                unset_data[k] = ""
+            else:
+                update_data[k] = v
+        
+        # Build the update operation
+        update_op = {}
+        if update_data:
+            update_op['$set'] = update_data
+        if unset_data:
+            update_op['$unset'] = unset_data
+        
+        if update_op:
+            res = coll.update_one({'id': id}, update_op)
+            if res.matched_count == 0:
+                return Response(status=404)
+        
         # Return the updated document from database
         updated = coll.find_one({'id': id})
         if updated:
