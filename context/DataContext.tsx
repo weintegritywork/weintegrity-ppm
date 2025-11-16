@@ -1,6 +1,7 @@
 import React, { createContext, useState, useEffect, ReactNode } from 'react';
 import { User, Team, Project, Story, Epic, Sprint, StoryChat, ProjectChat, ChatMessage, Notification } from '../types';
 import { api } from '../utils/api';
+import { checkDeadlines } from '../utils/deadlineChecker';
 
 export interface DataContextType {
   users: User[];
@@ -128,7 +129,18 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
     }, 10000); // Poll every 10 seconds
     
-    return () => clearInterval(notificationInterval);
+    // Check deadlines every hour
+    const deadlineInterval = setInterval(async () => {
+      const deadlineNotifications = checkDeadlines(projects, stories, sprints, notifications);
+      for (const notif of deadlineNotifications) {
+        await addNotification(notif);
+      }
+    }, 60 * 60 * 1000); // Check every hour
+    
+    return () => {
+      clearInterval(notificationInterval);
+      clearInterval(deadlineInterval);
+    };
   }, []);
 
   const refreshData = async () => {
