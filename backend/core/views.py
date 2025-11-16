@@ -15,37 +15,44 @@ from sib_api_v3_sdk.rest import ApiException
 
 
 def send_otp_email(to_email, otp):
-    """Send OTP email using Brevo (Sendinblue)"""
-    api_key = os.getenv('BREVO_API_KEY')
-    if not api_key:
-        raise Exception('BREVO_API_KEY not configured')
+    """Send OTP email using Gmail SMTP"""
+    import smtplib
+    from email.mime.text import MIMEText
+    from email.mime.multipart import MIMEMultipart
     
-    configuration = sib_api_v3_sdk.Configuration()
-    configuration.api_key['api-key'] = api_key
+    gmail_user = os.getenv('GMAIL_USER')
+    gmail_password = os.getenv('GMAIL_APP_PASSWORD')
     
-    api_instance = sib_api_v3_sdk.TransactionalEmailsApi(sib_api_v3_sdk.ApiClient(configuration))
+    if not gmail_user or not gmail_password:
+        raise Exception('Gmail credentials not configured')
     
-    send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(
-        to=[{"email": to_email}],
-        sender={"email": "noreply@weintegrity.com", "name": "WEIntegrity"},
-        subject="Password Reset Code",
-        html_content=f"""
-        <html>
-            <body>
-                <h2>Password Reset Request</h2>
-                <p>Your password reset code is:</p>
-                <h1 style="color: #4F46E5; font-size: 32px; letter-spacing: 5px;">{otp}</h1>
-                <p>This code will expire in 10 minutes.</p>
-                <p>If you didn't request this, please ignore this email.</p>
-            </body>
-        </html>
-        """
-    )
+    msg = MIMEMultipart('alternative')
+    msg['Subject'] = 'Password Reset Code - WEIntegrity'
+    msg['From'] = f'WEIntegrity <{gmail_user}>'
+    msg['To'] = to_email
+    
+    html_content = f"""
+    <html>
+        <body style="font-family: Arial, sans-serif; padding: 20px;">
+            <h2 style="color: #333;">Password Reset Request</h2>
+            <p>Your password reset code is:</p>
+            <h1 style="color: #4F46E5; font-size: 32px; letter-spacing: 5px; background: #f3f4f6; padding: 20px; text-align: center; border-radius: 8px;">{otp}</h1>
+            <p style="color: #666;">This code will expire in 10 minutes.</p>
+            <p style="color: #999; font-size: 12px;">If you didn't request this, please ignore this email.</p>
+        </body>
+    </html>
+    """
+    
+    msg.attach(MIMEText(html_content, 'html'))
     
     try:
-        api_instance.send_transac_email(send_smtp_email)
-    except ApiException as e:
-        raise Exception(f'Brevo API error: {e}')
+        server = smtplib.SMTP('smtp.gmail.com', 587)
+        server.starttls()
+        server.login(gmail_user, gmail_password)
+        server.sendmail(gmail_user, to_email, msg.as_string())
+        server.quit()
+    except Exception as e:
+        raise Exception(f'Gmail SMTP error: {e}')
 
 
 def collection(name):
