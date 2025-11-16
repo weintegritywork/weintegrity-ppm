@@ -36,6 +36,8 @@ export interface User {
   experience?: number; // years of experience
   nativeLocation?: string;
   workLocation?: WorkLocation;
+  avatar?: string; // Base64 image data or URL
+  bio?: string; // Short bio/description
 }
 
 export interface Team {

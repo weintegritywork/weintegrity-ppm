@@ -42,6 +42,9 @@ const Profile: React.FC = () => {
   const [skillInput, setSkillInput] = useState('');
 
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string>('');
+  const [bio, setBio] = useState('');
 
   if (!dataContext || !authContext || !toastContext) return <div>Loading...</div>;
 
@@ -163,9 +166,15 @@ const Profile: React.FC = () => {
   const handleSaveChanges = async () => {
     if (editingUser && validate()) {
         try {
-          await updateUser(user.id, editingUser);
+          const updatedData = { ...editingUser };
+          if (avatarPreview) {
+            updatedData.avatar = avatarPreview;
+          }
+          await updateUser(user.id, updatedData);
           toastContext.addToast('Employee details updated successfully!', 'success');
           setIsEditModalOpen(false);
+          setAvatarFile(null);
+          setAvatarPreview('');
         } catch (error) {
           toastContext.addToast('Failed to update employee. Please try again.', 'error');
         }
@@ -208,14 +217,25 @@ const Profile: React.FC = () => {
         <div className="lg:col-span-1">
           <Card>
             <div className="flex flex-col items-center">
-              <div className="w-24 h-24 rounded-full bg-blue-500 text-white flex items-center justify-center text-4xl font-bold mb-4">
-                {user.firstName.charAt(0)}{user.lastName.charAt(0)}
-              </div>
-              <h2 className="text-2xl font-bold">{user.firstName} {user.lastName}</h2>
-              <p className="text-gray-500">{user.jobTitle}</p>
+              {user.avatar ? (
+                <img 
+                  src={user.avatar} 
+                  alt={`${user.firstName} ${user.lastName}`}
+                  className="w-24 h-24 rounded-full object-cover mb-4 border-4 border-blue-500"
+                />
+              ) : (
+                <div className="w-24 h-24 rounded-full bg-blue-500 text-white flex items-center justify-center text-4xl font-bold mb-4">
+                  {user.firstName.charAt(0)}{user.lastName.charAt(0)}
+                </div>
+              )}
+              <h2 className="text-2xl font-bold dark:text-white">{user.firstName} {user.lastName}</h2>
+              <p className="text-gray-500 dark:text-gray-400">{user.jobTitle}</p>
               <span className={`mt-2 px-3 py-1 text-xs font-semibold rounded-full ${user.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                 {user.status === 'active' ? 'Active' : 'Inactive'}
               </span>
+              {user.bio && (
+                <p className="mt-4 text-sm text-gray-600 dark:text-gray-300 text-center italic">"{user.bio}"</p>
+              )}
             </div>
              {currentUser?.role === Role.Admin && currentUser.id !== user.id && (
                 <div className="mt-4 border-t pt-4 space-y-3">
@@ -403,6 +423,58 @@ const Profile: React.FC = () => {
                     ]}
                   />
                 </div>
+            </div>
+
+            {/* Avatar Upload */}
+            <div className="border-t pt-4">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Profile Picture
+              </label>
+              <div className="flex items-center gap-4">
+                {(avatarPreview || editingUser.avatar) && (
+                  <img 
+                    src={avatarPreview || editingUser.avatar} 
+                    alt="Avatar preview"
+                    className="w-20 h-20 rounded-full object-cover border-2 border-gray-300"
+                  />
+                )}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      if (file.size > 2 * 1024 * 1024) {
+                        toastContext.addToast('Image must be less than 2MB', 'error');
+                        return;
+                      }
+                      setAvatarFile(file);
+                      const reader = new FileReader();
+                      reader.onloadend = () => {
+                        setAvatarPreview(reader.result as string);
+                      };
+                      reader.readAsDataURL(file);
+                    }
+                  }}
+                  className="text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                />
+              </div>
+            </div>
+
+            {/* Bio Section */}
+            <div className="border-t pt-4">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Bio
+              </label>
+              <textarea
+                value={editingUser.bio || ''}
+                onChange={(e) => setEditingUser({ ...editingUser, bio: e.target.value })}
+                placeholder="Tell us about yourself..."
+                rows={3}
+                maxLength={200}
+                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              />
+              <p className="text-xs text-gray-500 mt-1">{(editingUser.bio || '').length}/200 characters</p>
             </div>
 
             {/* Skills Section */}
