@@ -49,12 +49,24 @@ const ChatBox: React.FC<ChatBoxProps> = ({ chatId, chatType, permissions }) => {
     };
 
     if (attachment) {
+      // Check file size (max 5MB)
+      if (attachment.size > 5 * 1024 * 1024) {
+        addToast('File size must be less than 5MB', 'error');
+        return;
+      }
+      
       // Convert file to base64 data URL for storage
       const reader = new FileReader();
       reader.onloadend = async () => {
+        const dataUrl = reader.result as string;
+        if (!dataUrl || dataUrl === 'data:') {
+          addToast('Failed to read file. Please try again.', 'error');
+          return;
+        }
+        
         message.attachment = {
           name: attachment.name,
-          url: reader.result as string,
+          url: dataUrl,
         };
         
         try {
@@ -62,9 +74,13 @@ const ChatBox: React.FC<ChatBoxProps> = ({ chatId, chatType, permissions }) => {
           setNewMessage('');
           setAttachment(null);
           if(fileInputRef.current) fileInputRef.current.value = '';
+          addToast('File uploaded successfully', 'success');
         } catch (error) {
           addToast('Failed to send message. Please try again.', 'error');
         }
+      };
+      reader.onerror = () => {
+        addToast('Failed to read file. Please try again.', 'error');
       };
       reader.readAsDataURL(attachment);
       return;
