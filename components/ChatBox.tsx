@@ -20,6 +20,7 @@ const ChatBox: React.FC<ChatBoxProps> = ({ chatId, chatType, permissions }) => {
   const chatEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [messageToDelete, setMessageToDelete] = useState<ChatMessage | null>(null);
+  const [isSending, setIsSending] = useState(false);
 
   if (!dataContext || !authContext || !toastContext) return null;
 
@@ -39,7 +40,7 @@ const ChatBox: React.FC<ChatBoxProps> = ({ chatId, chatType, permissions }) => {
   const getUserById = (id: string): User | undefined => users.find(u => u.id === id);
 
   const handleSendMessage = async () => {
-    if ((newMessage.trim() === '' && !attachment) || !currentUser || !permissions.canChat) return;
+    if ((newMessage.trim() === '' && !attachment) || !currentUser || !permissions.canChat || isSending) return;
 
     const message: ChatMessage = {
       id: `msg-${Date.now()}`,
@@ -55,12 +56,14 @@ const ChatBox: React.FC<ChatBoxProps> = ({ chatId, chatType, permissions }) => {
         return;
       }
       
+      setIsSending(true);
       // Convert file to base64 data URL for storage
       const reader = new FileReader();
       reader.onloadend = async () => {
         const dataUrl = reader.result as string;
         if (!dataUrl || dataUrl === 'data:') {
           addToast('Failed to read file. Please try again.', 'error');
+          setIsSending(false);
           return;
         }
         
@@ -77,15 +80,19 @@ const ChatBox: React.FC<ChatBoxProps> = ({ chatId, chatType, permissions }) => {
           addToast('File uploaded successfully', 'success');
         } catch (error) {
           addToast('Failed to send message. Please try again.', 'error');
+        } finally {
+          setIsSending(false);
         }
       };
       reader.onerror = () => {
         addToast('Failed to read file. Please try again.', 'error');
+        setIsSending(false);
       };
       reader.readAsDataURL(attachment);
       return;
     }
     
+    setIsSending(true);
     try {
       await addChatMessage(chatId, chatType, message);
       setNewMessage('');
@@ -93,6 +100,8 @@ const ChatBox: React.FC<ChatBoxProps> = ({ chatId, chatType, permissions }) => {
       if(fileInputRef.current) fileInputRef.current.value = '';
     } catch (error) {
       addToast('Failed to send message. Please try again.', 'error');
+    } finally {
+      setIsSending(false);
     }
   };
   
@@ -206,10 +215,10 @@ const ChatBox: React.FC<ChatBoxProps> = ({ chatId, chatType, permissions }) => {
                 />
                 <button
                   onClick={handleSendMessage}
-                  className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors shadow-sm disabled:bg-blue-300"
-                  disabled={!newMessage.trim() && !attachment}
+                  className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors shadow-sm disabled:bg-blue-300 disabled:cursor-not-allowed"
+                  disabled={(!newMessage.trim() && !attachment) || isSending}
                 >
-                  Send
+                  {isSending ? 'Sending...' : 'Send'}
                 </button>
                 <button onClick={() => fileInputRef.current?.click()} className="p-2 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors">
                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
