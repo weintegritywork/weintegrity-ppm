@@ -160,9 +160,10 @@ const ChatBox: React.FC<ChatBoxProps> = ({ chatId, chatType, permissions }) => {
                               alt={msg.attachment.name}
                               className={`rounded transition-all duration-300 ${
                                 imagePreview?.url === msg.attachment.url 
-                                  ? 'max-w-full h-auto cursor-zoom-out' 
-                                  : 'max-w-[200px] h-auto cursor-zoom-in hover:opacity-90'
+                                  ? 'max-w-[400px] max-h-[300px] cursor-zoom-out' 
+                                  : 'max-w-[200px] max-h-[150px] cursor-zoom-in hover:opacity-90'
                               }`}
+                              style={{ objectFit: 'contain' }}
                               onClick={() => {
                                 if (imagePreview?.url === msg.attachment!.url) {
                                   setImagePreview(null);
