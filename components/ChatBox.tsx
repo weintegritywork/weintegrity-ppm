@@ -1,4 +1,5 @@
 import React, { useContext, useState, useRef, useEffect } from 'react';
+import ReactDOM from 'react-dom';
 import { DataContext } from '../context/DataContext';
 import { AuthContext } from '../context/AuthContext';
 import { ToastContext } from '../context/ToastContext';
@@ -269,9 +270,9 @@ const ChatBox: React.FC<ChatBoxProps> = ({ chatId, chatType, permissions }) => {
       </Modal>
       
       {/* Image Preview Modal */}
-      {imagePreview && (
+      {imagePreview && ReactDOM.createPortal(
         <div
-          className="fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center p-4"
+          className="fixed top-0 left-0 w-full h-full bg-black bg-opacity-75 flex justify-center items-center"
           style={{ zIndex: 9999 }}
           onClick={() => setImagePreview(null)}
         >
@@ -285,11 +286,16 @@ const ChatBox: React.FC<ChatBoxProps> = ({ chatId, chatType, permissions }) => {
             <img 
               src={imagePreview.url} 
               alt={imagePreview.name}
-              className="max-w-[90vw] max-h-[85vh] object-contain rounded shadow-2xl"
-              onClick={(e) => e.stopPropagation()}
+              style={{ 
+                maxWidth: '90vw', 
+                maxHeight: '85vh', 
+                objectFit: 'contain',
+                display: 'block'
+              }}
             />
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );
