@@ -68,7 +68,7 @@ const Sidebar: React.FC = () => {
       <div className="flex items-center justify-between p-4 h-16 border-b border-blue-800">
         {!isCollapsed && <span className="text-xl font-bold">{settings.portalName}</span>}
         <button onClick={() => setIsCollapsed(!isCollapsed)} className="p-2 rounded-md hover:bg-blue-800">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24" stroke="currentColor">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
           </svg>
         </button>
@@ -78,7 +78,7 @@ const Sidebar: React.FC = () => {
           {linksToRender.map((link) => (
             <Tooltip key={link.to} content={link.text} position="right" delay={300} disabled={!isCollapsed}>
               <NavLink to={link.to} className={navLinkClasses} end>
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24" stroke="currentColor">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={link.icon} />
                 </svg>
                 <span className={navTextClasses}>{link.text}</span>
@@ -89,7 +89,7 @@ const Sidebar: React.FC = () => {
           {currentUser.role === Role.ProductOwner ? (
             <Tooltip content={storiesLinkItem.text} position="right" delay={300} disabled={!isCollapsed}>
                <NavLink to="/stories" className={navLinkClasses} end>
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24" stroke="currentColor">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={storiesLinkItem.icon} />
                 </svg>
                 <span className={navTextClasses}>{storiesLinkItem.text}</span>
@@ -99,7 +99,7 @@ const Sidebar: React.FC = () => {
             <div>
               <Tooltip content={storiesLinkItem.text} position="right" delay={300} disabled={!isCollapsed}>
                 <button onClick={() => setIsStoriesOpen(!isStoriesOpen)} className={storiesButtonClasses}>
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24" stroke="currentColor">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={storiesLinkItem.icon} />
                   </svg>
                   <span className={navTextClasses}>{storiesLinkItem.text}</span>
@@ -123,7 +123,7 @@ const Sidebar: React.FC = () => {
           {userPermissions.canAccessSettings && (
              <Tooltip content={settingsLink.text} position="right" delay={300} disabled={!isCollapsed}>
                <NavLink to={settingsLink.to} className={navLinkClasses}>
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24" stroke="currentColor">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={settingsLink.icon} />
                 </svg>
                 <span className={navTextClasses}>{settingsLink.text}</span>
