@@ -157,7 +157,17 @@ const ChatBox: React.FC<ChatBoxProps> = ({ chatId, chatType, permissions }) => {
                             src={msg.attachment.url} 
                             alt={msg.attachment.name}
                             className="max-w-full h-auto rounded cursor-pointer hover:opacity-90"
-                            onClick={() => window.open(msg.attachment!.url, '_blank')}
+                            onClick={() => {
+                              if (msg.attachment!.url.startsWith('data:')) {
+                                window.open(msg.attachment!.url, '_blank');
+                              } else {
+                                addToast('Image data not available', 'error');
+                              }
+                            }}
+                            onError={(e) => {
+                              console.error('Image load error:', msg.attachment);
+                              e.currentTarget.style.display = 'none';
+                            }}
                           />
                         ) : (
                           <div className="flex items-center gap-2 cursor-pointer" onClick={() => {
