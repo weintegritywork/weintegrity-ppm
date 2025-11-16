@@ -271,20 +271,21 @@ const ChatBox: React.FC<ChatBoxProps> = ({ chatId, chatType, permissions }) => {
       {/* Image Preview Modal */}
       {imagePreview && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-75 z-50 flex justify-center items-center p-4"
+          className="fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center p-4"
+          style={{ zIndex: 9999 }}
           onClick={() => setImagePreview(null)}
         >
-          <div className="relative max-w-4xl max-h-[90vh]">
+          <div className="relative">
             <button
               onClick={() => setImagePreview(null)}
-              className="absolute -top-10 right-0 text-white hover:text-gray-300 text-xl font-bold"
+              className="absolute -top-12 right-0 text-white hover:text-gray-300 text-lg font-semibold bg-black bg-opacity-50 px-4 py-2 rounded"
             >
               ✕ Close
             </button>
             <img 
               src={imagePreview.url} 
               alt={imagePreview.name}
-              className="max-w-full max-h-[85vh] object-contain rounded"
+              className="max-w-[90vw] max-h-[85vh] object-contain rounded shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             />
           </div>
