@@ -355,12 +355,10 @@ const Login: React.FC = () => {
               <FormField label="Email Address" id="email-login" type="email" value={emailForLogin} onChange={e => setEmailForLogin(e.target.value)} required/>
               <FormField label="Password" id="password-login" type="password" value={password} onChange={e => setPassword(e.target.value)} required/>
               
-              <div className="flex items-center justify-end">
-                <div className="text-sm">
-                  <button type="button" onClick={() => setView('FORGOT_PASSWORD')} className="font-medium text-blue-600 hover:text-blue-500">
-                    Forgot your password?
-                  </button>
-                </div>
+              <div className="text-center mt-4">
+                <p className="text-sm text-gray-600">
+                  Forgot your password? <span className="font-medium text-gray-800">Contact your administrator</span> to reset it.
+                </p>
               </div>
 
               {error && <p className="text-red-500 text-sm text-center">{error}</p>}
