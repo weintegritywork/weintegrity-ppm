@@ -52,6 +52,8 @@ const Stories: React.FC = () => {
   useEffect(() => {
     const prefilter = location.state?.prefilter as StoryState | undefined;
     const storiesFilter = location.state?.storiesFilter as 'my' | 'all' | undefined;
+    const openModal = location.state?.openModal as boolean | undefined;
+    const prefilledProjectId = location.state?.prefilledProjectId as string | undefined;
 
     if (prefilter) {
         setFilters(prev => ({...prev, state: prefilter}));
@@ -59,9 +61,15 @@ const Stories: React.FC = () => {
     if (storiesFilter) {
       setAssignmentFilter(storiesFilter);
     }
+    if (openModal) {
+      setIsModalOpen(true);
+      if (prefilledProjectId) {
+        setNewStoryData(prev => ({ ...prev, projectId: prefilledProjectId }));
+      }
+    }
     
     // Clear the state from history so the filter isn't sticky on refresh/re-navigate
-    if (location.state?.prefilter || location.state?.storiesFilter) {
+    if (location.state?.prefilter || location.state?.storiesFilter || location.state?.openModal) {
         navigate(location.pathname, { replace: true, state: {} });
     }
   }, [location.state, navigate]);

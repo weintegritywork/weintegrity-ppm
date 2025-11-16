@@ -1,6 +1,6 @@
 from django.urls import path
 from .views import (
-    LoginView, RegisterView, RefreshView, DevSeedView,
+    LoginView, RegisterView, RefreshView,
     ForgotPasswordView, VerifyOtpView, ResetPasswordView,
     UsersView, TeamsView, ProjectsView, StoriesView,
     EpicsView, SprintsView, NotificationsView,
@@ -14,7 +14,6 @@ urlpatterns = [
     path('auth/forgot-password/', ForgotPasswordView.as_view(), name='forgot-password'),
     path('auth/verify-otp/', VerifyOtpView.as_view(), name='verify-otp'),
     path('auth/reset-password/', ResetPasswordView.as_view(), name='reset-password'),
-    path('dev/seed/', DevSeedView.as_view(), name='dev-seed'),
 
     path('users/', UsersView.as_view(), name='users-list'),
     path('users/<str:id>/', UsersView.as_view(), name='users-detail'),

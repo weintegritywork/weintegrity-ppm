@@ -74,6 +74,11 @@ const Profile: React.FC = () => {
   const project = projects.find(p => p.id === user.projectId);
   const assignedStories = stories.filter(s => s.assignedToId === user.id);
 
+  // Debug logging
+  console.log('User projectId:', user.projectId);
+  console.log('All projects:', projects);
+  console.log('Found project:', project);
+
   const canViewSensitiveInfo = currentUser?.role === Role.Admin || currentUser?.role === Role.HR || currentUser?.id === user.id;
 
   const handlePasswordUpdate = async () => {
@@ -299,7 +304,20 @@ const Profile: React.FC = () => {
               )}
             </dl>
           </Card>
-          <Card title="Assigned Stories" className="mt-6">
+          <Card title={
+            <div className="flex justify-between items-center">
+                <span>Assigned Stories</span>
+                {user.projectId && (currentUser?.role === Role.Admin || currentUser?.role === Role.HR) && (
+                    <Link
+                        to="/stories"
+                        state={{ openModal: true, prefilledProjectId: user.projectId }}
+                        className="bg-blue-100 text-blue-700 px-3 py-1 rounded-md text-sm font-medium hover:bg-blue-200 transition-colors"
+                    >
+                        + Add Story
+                    </Link>
+                )}
+            </div>
+          } className="mt-6">
             {assignedStories.length > 0 ? (
               <ul className="space-y-3">
                 {assignedStories.map((story: Story) => (

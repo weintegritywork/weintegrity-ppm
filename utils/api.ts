@@ -171,13 +171,6 @@ class ApiService {
     });
   }
 
-  // Special endpoints
-  async seedDatabase() {
-    return this.request('/dev/seed/', {
-      method: 'POST',
-    });
-  }
-
   // Chat endpoints
   async getStoryChats(storyId: string) {
     return this.request<{ storyId: string; messages: any[] }>(
