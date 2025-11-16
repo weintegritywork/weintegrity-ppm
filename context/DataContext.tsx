@@ -233,7 +233,13 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const team = teams.find(t => t.id === teamId);
     if (!team) return;
     
-    const result = await api.put<Team>('teams', teamId, { ...team, ...updatedData });
+    // Convert undefined to null for proper serialization
+    const sanitizedData = Object.entries(updatedData).reduce((acc, [key, value]) => {
+      acc[key] = value === undefined ? null : value;
+      return acc;
+    }, {} as any);
+    
+    const result = await api.put<Team>('teams', teamId, { ...team, ...sanitizedData });
     if (result.data) {
       setTeams(prev => prev.map(t => t.id === teamId ? result.data! : t));
       
@@ -363,18 +369,30 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const teamsToUnassign = originalTeamIds.filter(id => !newTeamIds.includes(id));
       const teamsToAssign = newTeamIds.filter(id => !originalTeamIds.includes(id));
 
+      console.log('=== PROJECT TEAM UPDATE ===');
+      console.log('Original teams:', originalTeamIds);
+      console.log('New teams:', newTeamIds);
+      console.log('Teams to unassign:', teamsToUnassign);
+      console.log('Teams to assign:', teamsToAssign);
+
       await Promise.all([
         ...teamsToUnassign.map(teamId => {
+          console.log(`Unassigning team ${teamId} from project ${projectId}`);
           return updateTeam(teamId, { projectId: undefined });
         }),
-        ...teamsToAssign.map(teamId => updateTeam(teamId, { projectId: projectId })),
+        ...teamsToAssign.map(teamId => {
+          console.log(`Assigning team ${teamId} to project ${projectId}`);
+          return updateTeam(teamId, { projectId: projectId });
+        }),
       ]);
       
       // Refresh teams data from server to ensure consistency
       const teamsRes = await api.get<Team[]>('teams');
       if (teamsRes.data) {
+        console.log('Refreshed teams from server:', teamsRes.data);
         setTeams(teamsRes.data);
       }
+      console.log('=========================');
     }
 
     // Recalculate memberIds if teams changed

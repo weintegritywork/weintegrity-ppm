@@ -328,6 +328,15 @@ class BaseCrudView(APIView):
     def put(self, request, id):
         coll = collection(self.collection_name)
         data = dict(request.data)
+        
+        # Debug logging for teams
+        if self.collection_name == 'teams':
+            print(f"=== UPDATING TEAM {id} ===")
+            print(f"Received data: {data}")
+            print(f"projectId in data: {'projectId' in data}")
+            if 'projectId' in data:
+                print(f"projectId value: {data.get('projectId')}")
+        
         # Hash password if updating users collection
         if self.collection_name == 'users' and 'password' in data and data['password']:
             # Check if password is already hashed
@@ -352,6 +361,9 @@ class BaseCrudView(APIView):
         if unset_data:
             update_op['$unset'] = unset_data
         
+        if self.collection_name == 'teams':
+            print(f"Update operation: {update_op}")
+        
         if update_op:
             res = coll.update_one({'id': id}, update_op)
             if res.matched_count == 0:
@@ -361,6 +373,11 @@ class BaseCrudView(APIView):
         updated = coll.find_one({'id': id})
         if updated:
             updated.pop('_id', None)
+        
+        if self.collection_name == 'teams':
+            print(f"Updated document: {updated}")
+            print("=========================")
+        
         return Response(updated or data)
 
     def delete(self, request, id):
