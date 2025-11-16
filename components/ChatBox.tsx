@@ -21,6 +21,7 @@ const ChatBox: React.FC<ChatBoxProps> = ({ chatId, chatType, permissions }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [messageToDelete, setMessageToDelete] = useState<ChatMessage | null>(null);
   const [isSending, setIsSending] = useState(false);
+  const [imagePreview, setImagePreview] = useState<{url: string, name: string} | null>(null);
 
   if (!dataContext || !authContext || !toastContext) return null;
 
@@ -156,18 +157,8 @@ const ChatBox: React.FC<ChatBoxProps> = ({ chatId, chatType, permissions }) => {
                           <img 
                             src={msg.attachment.url} 
                             alt={msg.attachment.name}
-                            className="max-w-full h-auto rounded cursor-pointer hover:opacity-90"
-                            onClick={() => {
-                              if (msg.attachment!.url.startsWith('data:')) {
-                                window.open(msg.attachment!.url, '_blank');
-                              } else {
-                                addToast('Image data not available', 'error');
-                              }
-                            }}
-                            onError={(e) => {
-                              console.error('Image load error:', msg.attachment);
-                              e.currentTarget.style.display = 'none';
-                            }}
+                            className="max-w-full h-auto rounded cursor-pointer hover:opacity-90 transition-opacity"
+                            onClick={() => setImagePreview({url: msg.attachment!.url, name: msg.attachment!.name})}
                           />
                         ) : (
                           <div className="flex items-center gap-2 cursor-pointer" onClick={() => {
@@ -276,6 +267,24 @@ const ChatBox: React.FC<ChatBoxProps> = ({ chatId, chatType, permissions }) => {
       >
         <p className="text-gray-600">Are you sure you want to permanently delete this message? This action cannot be undone.</p>
       </Modal>
+      
+      {/* Image Preview Modal */}
+      {imagePreview && (
+        <Modal
+          isOpen={true}
+          onClose={() => setImagePreview(null)}
+          title={imagePreview.name}
+          size="lg"
+        >
+          <div className="flex justify-center">
+            <img 
+              src={imagePreview.url} 
+              alt={imagePreview.name}
+              className="max-w-full h-auto rounded"
+            />
+          </div>
+        </Modal>
+      )}
     </>
   );
 };
