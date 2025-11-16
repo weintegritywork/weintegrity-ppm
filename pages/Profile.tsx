@@ -310,20 +310,7 @@ const Profile: React.FC = () => {
               )}
             </dl>
           </Card>
-          <Card title={
-            <div className="flex justify-between items-center">
-                <span>Assigned Stories</span>
-                {user.projectId && (currentUser?.role === Role.Admin || currentUser?.role === Role.HR) && (
-                    <Link
-                        to="/stories"
-                        state={{ openModal: true, prefilledProjectId: user.projectId }}
-                        className="bg-blue-100 text-blue-700 px-3 py-1 rounded-md text-sm font-medium hover:bg-blue-200 transition-colors"
-                    >
-                        + Add Story
-                    </Link>
-                )}
-            </div>
-          } className="mt-6">
+          <Card title="Assigned Stories" className="mt-6">
             {assignedStories.length > 0 ? (
               <ul className="space-y-3">
                 {assignedStories.map((story: Story) => (

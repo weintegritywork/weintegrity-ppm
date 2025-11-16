@@ -365,12 +365,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       await Promise.all([
         ...teamsToUnassign.map(teamId => {
-          const team = teams.find(t => t.id === teamId);
-          if (team) {
-            const { projectId, ...rest } = team;
-            return updateTeam(teamId, rest);
-          }
-          return Promise.resolve();
+          return updateTeam(teamId, { projectId: undefined });
         }),
         ...teamsToAssign.map(teamId => updateTeam(teamId, { projectId: projectId })),
       ]);
