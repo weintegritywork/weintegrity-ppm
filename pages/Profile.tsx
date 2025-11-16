@@ -75,9 +75,15 @@ const Profile: React.FC = () => {
   const assignedStories = stories.filter(s => s.assignedToId === user.id);
 
   // Debug logging
-  console.log('User projectId:', user.projectId);
+  console.log('=== PROFILE DEBUG ===');
+  console.log('User object:', user);
+  console.log('User projectId:', user.projectId, 'Type:', typeof user.projectId);
+  console.log('User teamId:', user.teamId, 'Type:', typeof user.teamId);
   console.log('All projects:', projects);
+  console.log('Project IDs:', projects.map(p => ({ id: p.id, name: p.name, type: typeof p.id })));
   console.log('Found project:', project);
+  console.log('Found team:', team);
+  console.log('==================');
 
   const canViewSensitiveInfo = currentUser?.role === Role.Admin || currentUser?.role === Role.HR || currentUser?.id === user.id;
 
