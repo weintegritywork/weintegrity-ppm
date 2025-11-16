@@ -45,6 +45,10 @@ const Profile: React.FC = () => {
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string>('');
   const [bio, setBio] = useState('');
+  
+  const [isPasswordUpdating, setIsPasswordUpdating] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   if (!dataContext || !authContext || !toastContext) return <div>Loading...</div>;
 
@@ -97,6 +101,7 @@ const Profile: React.FC = () => {
       return;
     }
     
+    setIsPasswordUpdating(true);
     try {
       await updateUser(user.id, { password: newPassword });
       toastContext.addToast("Password updated successfully!", 'success');
@@ -106,6 +111,8 @@ const Profile: React.FC = () => {
       setPasswordError('');
     } catch (error) {
       toastContext.addToast('Failed to update password. Please try again.', 'error');
+    } finally {
+      setIsPasswordUpdating(false);
     }
   };
 
@@ -176,6 +183,7 @@ const Profile: React.FC = () => {
 
   const handleSaveChanges = async () => {
     if (editingUser && validate()) {
+        setIsSaving(true);
         try {
           const updatedData = { ...editingUser };
           if (avatarPreview) {
@@ -188,6 +196,8 @@ const Profile: React.FC = () => {
           setAvatarPreview('');
         } catch (error) {
           toastContext.addToast('Failed to update employee. Please try again.', 'error');
+        } finally {
+          setIsSaving(false);
         }
     } else {
         toastContext.addToast('Please correct the errors in the form.', 'error');
@@ -204,12 +214,15 @@ const Profile: React.FC = () => {
         return;
     }
 
+    setIsDeleting(true);
     try {
       await deleteUser(user.id);
       toastContext.addToast('Employee has been permanently deleted.', 'success');
       navigate('/employees');
     } catch (error) {
       toastContext.addToast('Failed to delete employee. Please try again.', 'error');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -379,8 +392,16 @@ const Profile: React.FC = () => {
           />
         </div>
         <div className="flex justify-end gap-2 mt-6">
-          <button type="button" onClick={() => setIsPasswordModalOpen(false)} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300">Cancel</button>
-          <button onClick={handlePasswordUpdate} className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">Update Password</button>
+          <button type="button" onClick={() => setIsPasswordModalOpen(false)} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300" disabled={isPasswordUpdating}>Cancel</button>
+          <button onClick={handlePasswordUpdate} className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 flex items-center" disabled={isPasswordUpdating}>
+            {isPasswordUpdating && (
+              <svg className="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+            )}
+            {isPasswordUpdating ? 'Updating...' : 'Update Password'}
+          </button>
         </div>
       </Modal>
 
@@ -533,8 +554,16 @@ const Profile: React.FC = () => {
             </div>
           </div>
           <div className="flex justify-end gap-2 mt-6">
-            <button type="button" onClick={() => setIsEditModalOpen(false)} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300">Cancel</button>
-            <button onClick={handleSaveChanges} className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">Save Changes</button>
+            <button type="button" onClick={() => setIsEditModalOpen(false)} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300" disabled={isSaving}>Cancel</button>
+            <button onClick={handleSaveChanges} className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 flex items-center" disabled={isSaving}>
+              {isSaving && (
+                <svg className="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              )}
+              {isSaving ? 'Saving...' : 'Save Changes'}
+            </button>
           </div>
         </Modal>
       )}
@@ -549,14 +578,22 @@ const Profile: React.FC = () => {
                 <button
                     onClick={() => setIsDeleteModalOpen(false)}
                     className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 font-medium"
+                    disabled={isDeleting}
                 >
                     Cancel
                 </button>
                 <button
                     onClick={handleDeleteEmployee}
-                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium"
+                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium disabled:opacity-50 flex items-center"
+                    disabled={isDeleting}
                 >
-                    Confirm Delete
+                    {isDeleting && (
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                    )}
+                    {isDeleting ? 'Deleting...' : 'Confirm Delete'}
                 </button>
             </div>
         }
