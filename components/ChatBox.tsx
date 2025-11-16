@@ -276,11 +276,12 @@ const ChatBox: React.FC<ChatBoxProps> = ({ chatId, chatType, permissions }) => {
           title={imagePreview.name}
           size="lg"
         >
-          <div className="flex justify-center">
+          <div className="flex justify-center items-center">
             <img 
               src={imagePreview.url} 
               alt={imagePreview.name}
-              className="max-w-full h-auto rounded"
+              className="max-w-full max-h-[70vh] object-contain rounded"
+              style={{ pointerEvents: 'none' }}
             />
           </div>
         </Modal>
