@@ -98,7 +98,7 @@ const TeamDetail: React.FC = () => {
       
       if (project && teamsInProject.length === 1) {
         toastContext.addToast(
-          `Cannot delete team. "${team.name}" is the only team assigned to project "${project.name}". Please assign another team to the project first or delete the project.`,
+          `Cannot delete "${team.name}". It's the only team in project "${project.name}". Assign another team first or delete the project.`,
           'error'
         );
         return;

@@ -30,7 +30,7 @@ const Toast: React.FC<{ message: string, type: 'success' | 'error' | 'info', onC
   const animationClass = isMounted && !isExiting ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-full';
 
   return (
-    <div className={`${baseClasses} ${typeClasses[type]} ${animationClass}`}>
+    <div className={`${baseClasses} ${typeClasses[type]} ${animationClass} cursor-pointer`} onClick={handleClose}>
       <div className="flex-1 font-medium">{message}</div>
       <button onClick={handleClose} className="ml-4 p-1 rounded-full hover:bg-white/20">
         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
