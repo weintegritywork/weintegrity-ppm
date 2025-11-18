@@ -31,15 +31,26 @@ const Teams: React.FC = () => {
   const { currentUser } = authContext;
   const { settings } = settingsContext;
 
-  const availableUsers = useMemo(() => {
-    const filtered = users.filter(u => !u.teamId);
-    console.log('=== AVAILABLE USERS DEBUG ===');
-    console.log('Total users:', users.length);
-    console.log('Users with teamId:', users.filter(u => u.teamId).map(u => ({ name: `${u.firstName} ${u.lastName}`, teamId: u.teamId })));
-    console.log('Available users (no teamId):', filtered.length);
-    console.log('============================');
-    return filtered;
-  }, [users]);
+  const availableUsers = useMemo(() => users.filter(u => !u.teamId), [users]);
+  
+  // Sync function to fix teamId for all users
+  const handleSyncTeamMembers = async () => {
+    try {
+      let updatedCount = 0;
+      for (const team of teams) {
+        for (const memberId of team.memberIds) {
+          const user = users.find(u => u.id === memberId);
+          if (user && user.teamId !== team.id) {
+            await dataContext.updateUser(memberId, { teamId: team.id });
+            updatedCount++;
+          }
+        }
+      }
+      toastContext.addToast(`Synced ${updatedCount} team member(s) successfully!`, 'success');
+    } catch (error) {
+      toastContext.addToast('Failed to sync team members. Please try again.', 'error');
+    }
+  };
   
   const visibleTeams = useMemo(() => {
     if (!currentUser) return [];
@@ -123,14 +134,25 @@ const Teams: React.FC = () => {
         title="Teams"
         showBackButton={false}
         actions={
-          canCreateTeam && (
-            <button
-              onClick={handleOpenModal}
-              className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors shadow-sm"
-            >
-              + New Team
-            </button>
-          )
+          <div className="flex gap-2">
+            {(currentUser?.role === Role.Admin || currentUser?.role === Role.HR) && (
+              <button
+                onClick={handleSyncTeamMembers}
+                className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors shadow-sm text-sm"
+                title="Sync team member assignments"
+              >
+                🔄 Sync Members
+              </button>
+            )}
+            {canCreateTeam && (
+              <button
+                onClick={handleOpenModal}
+                className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors shadow-sm"
+              >
+                + New Team
+              </button>
+            )}
+          </div>
         }
       />
       <Card>
