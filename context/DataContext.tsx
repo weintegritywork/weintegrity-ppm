@@ -321,7 +321,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         if (usersRes.data) setUsers(usersRes.data);
         if (storiesRes.data) setStories(storiesRes.data);
       }
-    }
       
       // If projectId changed, update user projectIds accordingly
       if (updatedData.projectId !== undefined) {

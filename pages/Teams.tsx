@@ -8,6 +8,7 @@ import Card from '../components/Card';
 import Table from '../components/Table';
 import Modal from '../components/Modal';
 import FormField from '../components/FormField';
+import SelectDropdown from '../components/SelectDropdown';
 import { Team, Role } from '../types';
 import PageHeader from '../components/PageHeader';
 
@@ -191,12 +192,19 @@ const Teams: React.FC = () => {
     <Modal isOpen={isModalOpen} onClose={handleCloseModal} title="Create New Team" size="lg">
       <form onSubmit={handleSubmit} className="space-y-4">
         <FormField id="name" label="Team Name" value={newTeamData.name} onChange={handleFormChange} required />
-        <FormField id="leadId" label="Team Lead" as="select" value={newTeamData.leadId} onChange={handleFormChange} required>
-            <option value="">Select a Team Lead</option>
-            {availableUsers.map(user => (
-                <option key={user.id} value={user.id}>{user.firstName} {user.lastName}</option>
-            ))}
-        </FormField>
+        <SelectDropdown
+          label="Team Lead"
+          value={newTeamData.leadId}
+          onChange={(value) => setNewTeamData(prev => ({ ...prev, leadId: value }))}
+          options={[
+            { value: '', label: 'Select a Team Lead' },
+            ...availableUsers.map(user => ({
+              value: user.id,
+              label: `${user.firstName} ${user.lastName}`
+            }))
+          ]}
+          required
+        />
         <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Team Members</label>
             <p className="text-xs text-gray-500 mb-2">Note: Only employees not assigned to other teams are shown.</p>
