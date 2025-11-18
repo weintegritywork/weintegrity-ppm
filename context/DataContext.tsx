@@ -299,28 +299,43 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const team = teams.find(t => t.id === teamId);
     if (!team) return;
     
+    // First, update all team members in the backend to remove teamId and projectId
+    const teamMembers = users.filter(u => u.teamId === teamId);
+    const updatePromises = teamMembers.map(user => 
+      api.put('users', user.id, { ...user, teamId: null, projectId: null })
+    );
+    
+    // Unassign stories from this team in the backend
+    const teamStories = stories.filter(s => s.assignedTeamId === teamId);
+    const storyUpdatePromises = teamStories.map(story =>
+      api.put('stories', story.id, { ...story, assignedTeamId: null, assignedToId: null })
+    );
+    
+    // Wait for all updates to complete
+    await Promise.all([...updatePromises, ...storyUpdatePromises]);
+    
+    // If team was assigned to a project, update the project's memberIds
+    if (team.projectId) {
+      const project = projects.find(p => p.id === team.projectId);
+      if (project) {
+        const updatedMemberIds = project.memberIds.filter(id => !team.memberIds.includes(id) && id !== team.leadId);
+        // Only keep the owner if they exist
+        const finalMemberIds = project.ownerId ? [project.ownerId, ...updatedMemberIds.filter(id => id !== project.ownerId)] : updatedMemberIds;
+        await updateProject(team.projectId, { memberIds: finalMemberIds });
+      }
+    }
+    
+    // Now delete the team
     const result = await api.delete('teams', teamId);
     if (!result.error) {
-      // Remove teamId AND projectId from all team members
+      // Update local state
       setUsers(prev => prev.map(u => 
         u.teamId === teamId ? { ...u, teamId: undefined, projectId: undefined } : u
       ));
       
-      // Unassign stories from this team
       setStories(prev => prev.map(s => 
         s.assignedTeamId === teamId ? { ...s, assignedTeamId: undefined, assignedToId: undefined } : s
       ));
-      
-      // If team was assigned to a project, update the project's memberIds
-      if (team.projectId) {
-        const project = projects.find(p => p.id === team.projectId);
-        if (project) {
-          const updatedMemberIds = project.memberIds.filter(id => !team.memberIds.includes(id));
-          // Only keep the owner if they exist
-          const finalMemberIds = project.ownerId ? [project.ownerId, ...updatedMemberIds.filter(id => id !== project.ownerId)] : updatedMemberIds;
-          await updateProject(team.projectId, { memberIds: finalMemberIds });
-        }
-      }
       
       setTeams(prev => prev.filter(t => t.id !== teamId));
     } else {
@@ -398,7 +413,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       await Promise.all([
         ...teamsToUnassign.map(teamId => {
           console.log(`Unassigning team ${teamId} from project ${projectId}`);
-          return updateTeam(teamId, { projectId: undefined });
+          return updateTeam(teamId, { projectId: null });
         }),
         ...teamsToAssign.map(teamId => {
           console.log(`Assigning team ${teamId} to project ${projectId}`);
