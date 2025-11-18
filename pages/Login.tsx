@@ -351,31 +351,14 @@ const Login: React.FC = () => {
                     <p className="text-sm">The portal is currently under maintenance. Only administrators can log in.</p>
                 </div>
             )}
-            <form className="mt-8 space-y-6" onSubmit={handleLoginSubmit} autoComplete="off">
-              <div>
-                <label htmlFor="email-login" className="block text-sm font-medium text-gray-700 mb-1">
-                  Email Address <span className="text-red-500">*</span>
-                </label>
-                <input
-                  id="email-login"
-                  type="email"
-                  value={emailForLogin}
-                  onChange={e => setEmailForLogin(e.target.value)}
-                  required
-                  autoComplete="off"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
+            <form className="mt-8 space-y-6" onSubmit={handleLoginSubmit}>
+              <FormField label="Email Address" id="email-login" type="email" value={emailForLogin} onChange={e => setEmailForLogin(e.target.value)} required/>
               <FormField label="Password" id="password-login" type="password" value={password} onChange={e => setPassword(e.target.value)} required/>
               
               <div className="text-center mt-4">
-                <button 
-                  type="button" 
-                  onClick={() => setView('FORGOT_PASSWORD')}
-                  className="text-sm text-blue-600 hover:underline font-medium"
-                >
-                  Forgot your password?
-                </button>
+                <p className="text-sm text-gray-600">
+                  Forgot your password? <span className="font-medium text-gray-800">Contact your administrator</span> to reset it.
+                </p>
               </div>
 
               {error && <p className="text-red-500 text-sm text-center">{error}</p>}
