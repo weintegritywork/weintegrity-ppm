@@ -328,15 +328,19 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     // Now delete the team
     const result = await api.delete('teams', teamId);
     if (!result.error) {
-      // Update local state
-      setUsers(prev => prev.map(u => 
-        u.teamId === teamId ? { ...u, teamId: undefined, projectId: undefined } : u
-      ));
+      // Refresh users from backend to get updated teamId values
+      const usersRes = await api.get<User[]>('users');
+      if (usersRes.data) {
+        setUsers(usersRes.data);
+      }
       
-      setStories(prev => prev.map(s => 
-        s.assignedTeamId === teamId ? { ...s, assignedTeamId: undefined, assignedToId: undefined } : s
-      ));
+      // Refresh stories from backend
+      const storiesRes = await api.get<Story[]>('stories');
+      if (storiesRes.data) {
+        setStories(storiesRes.data);
+      }
       
+      // Remove team from local state
       setTeams(prev => prev.filter(t => t.id !== teamId));
     } else {
       throw new Error(result.error || 'Failed to delete team');
