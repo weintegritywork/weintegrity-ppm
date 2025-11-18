@@ -87,17 +87,14 @@ http://localhost:8000/api/dev/seed/
 
 ## 🔑 Test Credentials
 
-After seeding, use these credentials:
+After seeding the database in development, default test accounts will be created.
+Check the seed endpoint response or backend logs for credentials.
 
-| Role | Email | Password |
-|------|-------|----------|
-| Admin | admin@example.com | admin123 |
-| HR | hr@example.com | hr123 |
-| Team Lead | lead@example.com | lead123 |
-| Product Owner | po@projecthub.com | po123 |
-| Employee | emma@example.com | emp123 |
-
-⚠️ **Change these in production!**
+⚠️ **IMPORTANT:** 
+- These are for development/testing ONLY
+- Never use default credentials in production
+- Change all passwords immediately after deployment
+- Use strong, unique passwords for production accounts
 
 ## 🚀 Deployment
 
@@ -157,19 +154,21 @@ python manage.py test
 
 ## 📝 Environment Variables
 
-### Frontend (.env.local)
-```
-VITE_API_URL=http://localhost:8000/api
+### Frontend
+Copy `.env.example` to `.env.local` and configure:
+```bash
+cp .env.example .env.local
+# Edit .env.local with your values
 ```
 
-### Backend (backend/.env)
+### Backend
+Copy `backend/.env.example` to `backend/.env` and configure:
+```bash
+cp backend/.env.example backend/.env
+# Edit backend/.env with your values
 ```
-MONGO_URI=mongodb://localhost:27017
-MONGO_DBNAME=weintegration_db
-SECRET_KEY=your-secret-key
-DEBUG=True
-USE_MONGOMOCK=true
-```
+
+See the `.env.example` files for all available configuration options.
 
 ## 🤝 Contributing
 
