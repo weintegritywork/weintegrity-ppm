@@ -406,7 +406,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const updatedMemberIds = Array.from(new Set([...team.memberIds, ...memberIds]));
     await updateTeam(teamId, { memberIds: updatedMemberIds });
     // updateTeam now handles backend updates and refreshes, no need to update local state here
-    ));
     
     // Create notifications for newly added members
     for (const userId of memberIds) {
