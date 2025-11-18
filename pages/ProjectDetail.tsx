@@ -111,6 +111,18 @@ const ProjectDetail: React.FC = () => {
         addToast('A project must have at least one team.', 'error');
         return;
       }
+      if (new Date(editingProject.endDate) < new Date(editingProject.startDate)) {
+        addToast('End date cannot be before start date.', 'error');
+        return;
+      }
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const endDate = new Date(editingProject.endDate);
+      endDate.setHours(0, 0, 0, 0);
+      if (endDate < today) {
+        addToast('End date cannot be in the past.', 'error');
+        return;
+      }
       try {
         await updateProject(project.id, editingProject);
         addToast('Project details updated!', 'success');
@@ -269,7 +281,7 @@ const ProjectDetail: React.FC = () => {
                 />
                 <div className="grid grid-cols-2 gap-4">
                     <FormField id="startDate" label="Start Date" type="date" value={editingProject.startDate} onChange={handleFormChange} required />
-                    <FormField id="endDate" label="End Date" type="date" value={editingProject.endDate} onChange={handleFormChange} required />
+                    <FormField id="endDate" label="End Date" type="date" value={editingProject.endDate} onChange={handleFormChange} required min={new Date().toISOString().split('T')[0]} />
                 </div>
                 <FormField id="description" label="Description" as="textarea" value={editingProject.description} onChange={handleFormChange} />
                 <div>

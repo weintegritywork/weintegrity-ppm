@@ -126,6 +126,14 @@ const Projects: React.FC = () => {
       toastContext.addToast('End date cannot be before start date.', 'error');
       return;
     }
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const endDate = new Date(newProjectData.endDate);
+    endDate.setHours(0, 0, 0, 0);
+    if (endDate < today) {
+      toastContext.addToast('End date cannot be in the past.', 'error');
+      return;
+    }
 
     // Determine the final owner ID (use selected owner or current user)
     const finalOwnerId = newProjectData.ownerId && newProjectData.ownerId.trim() !== '' 
@@ -251,8 +259,8 @@ const Projects: React.FC = () => {
                 placeholder="Select a Project Owner"
             />
             <div className="grid grid-cols-2 gap-4">
-                <FormField id="startDate" label="Start Date" type="date" value={newProjectData.startDate} onChange={handleFormChange} required min={today} />
-                <FormField id="endDate" label="End Date" type="date" value={newProjectData.endDate} onChange={handleFormChange} required min={newProjectData.startDate || today} />
+                <FormField id="startDate" label="Start Date" type="date" value={newProjectData.startDate} onChange={handleFormChange} required />
+                <FormField id="endDate" label="End Date" type="date" value={newProjectData.endDate} onChange={handleFormChange} required min={today} />
             </div>
             <FormField id="description" label="Description" as="textarea" value={newProjectData.description} onChange={handleFormChange} />
             <SelectDropdown
