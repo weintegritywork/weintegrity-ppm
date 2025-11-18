@@ -91,6 +91,21 @@ const TeamDetail: React.FC = () => {
   };
 
   const handleDeleteTeam = async () => {
+    // Check if this team is assigned to a project and is the only team
+    if (team.projectId) {
+      const project = projects.find(p => p.id === team.projectId);
+      const teamsInProject = teams.filter(t => t.projectId === team.projectId);
+      
+      if (project && teamsInProject.length === 1) {
+        toastContext.addToast(
+          `Cannot delete team. "${team.name}" is the only team assigned to project "${project.name}". Please assign another team to the project first or delete the project.`,
+          'error'
+        );
+        setIsDeleteModalOpen(false);
+        return;
+      }
+    }
+    
     try {
       await deleteTeam(team.id);
       toastContext.addToast('Team has been permanently deleted.', 'success');
