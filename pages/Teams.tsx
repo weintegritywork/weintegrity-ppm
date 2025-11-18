@@ -33,24 +33,44 @@ const Teams: React.FC = () => {
 
   const availableUsers = useMemo(() => users.filter(u => !u.teamId), [users]);
   
-  // Sync function to fix teamId for all users
-  const handleSyncTeamMembers = async () => {
-    try {
-      let updatedCount = 0;
+  // Auto-sync teamId for users on component mount
+  React.useEffect(() => {
+    const syncTeamMembers = async () => {
+      let needsSync = false;
+      
+      // Check if any users need syncing
       for (const team of teams) {
         for (const memberId of team.memberIds) {
           const user = users.find(u => u.id === memberId);
           if (user && user.teamId !== team.id) {
-            await dataContext.updateUser(memberId, { teamId: team.id });
-            updatedCount++;
+            needsSync = true;
+            break;
           }
         }
+        if (needsSync) break;
       }
-      toastContext.addToast(`Synced ${updatedCount} team member(s) successfully!`, 'success');
-    } catch (error) {
-      toastContext.addToast('Failed to sync team members. Please try again.', 'error');
+      
+      // Only sync if needed
+      if (needsSync) {
+        try {
+          for (const team of teams) {
+            for (const memberId of team.memberIds) {
+              const user = users.find(u => u.id === memberId);
+              if (user && user.teamId !== team.id) {
+                await dataContext.updateUser(memberId, { teamId: team.id });
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Auto-sync failed:', error);
+        }
+      }
+    };
+    
+    if (teams.length > 0 && users.length > 0) {
+      syncTeamMembers();
     }
-  };
+  }, [teams, users, dataContext]);
   
   const visibleTeams = useMemo(() => {
     if (!currentUser) return [];
@@ -134,25 +154,14 @@ const Teams: React.FC = () => {
         title="Teams"
         showBackButton={false}
         actions={
-          <div className="flex gap-2">
-            {(currentUser?.role === Role.Admin || currentUser?.role === Role.HR) && (
-              <button
-                onClick={handleSyncTeamMembers}
-                className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors shadow-sm text-sm"
-                title="Sync team member assignments"
-              >
-                🔄 Sync Members
-              </button>
-            )}
-            {canCreateTeam && (
-              <button
-                onClick={handleOpenModal}
-                className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors shadow-sm"
-              >
-                + New Team
-              </button>
-            )}
-          </div>
+          canCreateTeam && (
+            <button
+              onClick={handleOpenModal}
+              className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors shadow-sm"
+            >
+              + New Team
+            </button>
+          )
         }
       />
       <Card>
