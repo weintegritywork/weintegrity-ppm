@@ -91,22 +91,21 @@ const TeamDetail: React.FC = () => {
   };
 
   const handleDeleteClick = () => {
-    // Check if this team is assigned to a project and is the only team
+    // Always open the modal
+    setIsDeleteModalOpen(true);
+  };
+  
+  // Check if this team can be deleted
+  const canDeleteTeamCheck = () => {
     if (team.projectId) {
       const project = projects.find(p => p.id === team.projectId);
       const teamsInProject = teams.filter(t => t.projectId === team.projectId);
       
       if (project && teamsInProject.length === 1) {
-        toastContext.addToast(
-          `Cannot delete "${team.name}". It's the only team in project "${project.name}". Assign another team first or delete the project.`,
-          'error'
-        );
-        return;
+        return { canDelete: false, project };
       }
     }
-    
-    // If validation passes, open the delete modal
-    setIsDeleteModalOpen(true);
+    return { canDelete: true, project: null };
   };
 
   const handleDeleteTeam = async () => {
@@ -324,22 +323,34 @@ const TeamDetail: React.FC = () => {
       <Modal
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
-        title="Confirm Team Deletion"
+        title={canDeleteTeamCheck().canDelete ? "Confirm Team Deletion" : "Cannot Delete Team"}
         size="sm"
       >
         <div className="text-center">
-            <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
-                <svg className="h-6 w-6 text-red-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+            <div className={`mx-auto flex items-center justify-center h-12 w-12 rounded-full mb-4 ${canDeleteTeamCheck().canDelete ? 'bg-red-100' : 'bg-yellow-100'}`}>
+                <svg className={`h-6 w-6 ${canDeleteTeamCheck().canDelete ? 'text-red-600' : 'text-yellow-600'}`} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
             </div>
-            <p className="text-sm text-gray-600">
-                Are you sure you want to permanently delete the <strong className="font-semibold text-red-700">{team.name}</strong> team? This will unassign all members and stories. This action is <strong className="font-semibold text-red-700">permanent and cannot be undone</strong>.
-            </p>
+            {canDeleteTeamCheck().canDelete ? (
+              <p className="text-sm text-gray-600">
+                  Are you sure you want to permanently delete the <strong className="font-semibold text-red-700">{team.name}</strong> team? This will unassign all members and stories. This action is <strong className="font-semibold text-red-700">permanent and cannot be undone</strong>.
+              </p>
+            ) : (
+              <p className="text-sm text-gray-600">
+                  Cannot delete <strong className="font-semibold text-yellow-700">{team.name}</strong> because it's the only team assigned to project <strong className="font-semibold text-yellow-700">{canDeleteTeamCheck().project?.name}</strong>.
+                  <br /><br />
+                  Please assign another team to the project first or delete the project.
+              </p>
+            )}
         </div>
         <div className="flex justify-end gap-2 mt-6">
-          <button onClick={() => setIsDeleteModalOpen(false)} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 font-medium">Cancel</button>
-          <button onClick={handleDeleteTeam} className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium">Delete Team</button>
+          <button onClick={() => setIsDeleteModalOpen(false)} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 font-medium">
+            {canDeleteTeamCheck().canDelete ? 'Cancel' : 'Close'}
+          </button>
+          {canDeleteTeamCheck().canDelete && (
+            <button onClick={handleDeleteTeam} className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium">Delete Team</button>
+          )}
         </div>
       </Modal>
 
