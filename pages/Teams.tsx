@@ -31,7 +31,10 @@ const Teams: React.FC = () => {
   const { currentUser } = authContext;
   const { settings } = settingsContext;
 
-  const availableUsers = useMemo(() => users.filter(u => !u.teamId), [users]);
+  const availableUsers = useMemo(() => 
+    users.filter(u => !u.teamId && u.role !== Role.Admin && u.role !== Role.HR), 
+    [users]
+  );
   
   // Auto-sync teamId for users on component mount
   React.useEffect(() => {

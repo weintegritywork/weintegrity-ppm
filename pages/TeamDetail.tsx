@@ -43,7 +43,11 @@ const TeamDetail: React.FC = () => {
   const teamStories = stories.filter(s => s.assignedTeamId === team.id);
 
   const availableUsers = useMemo(() => {
-    return users.filter(u => !u.teamId || u.teamId === team.id);
+    return users.filter(u => 
+      ((!u.teamId || u.teamId === team.id)) && 
+      u.role !== Role.Admin && 
+      u.role !== Role.HR
+    );
   }, [users, team.id]);
 
   const handleMemberSelect = (userId: string) => {
