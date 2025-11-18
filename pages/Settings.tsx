@@ -38,6 +38,9 @@ const SettingsManager: React.FC = () => {
     const [isAccessModalOpen, setIsAccessModalOpen] = useState(false);
     const [isResetPwdModalOpen, setIsResetPwdModalOpen] = useState(false);
     const [userToReset, setUserToReset] = useState<User | null>(null);
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [passwordError, setPasswordError] = useState('');
 
     const isAdmin = currentUser!.role === Role.Admin;
     const userPermissions = settings.accessControl[currentUser!.role];
@@ -76,17 +79,41 @@ const SettingsManager: React.FC = () => {
 
     const handlePasswordReset = (user: User) => {
         setUserToReset(user);
+        setNewPassword('');
+        setConfirmPassword('');
+        setPasswordError('');
         setIsResetPwdModalOpen(true);
     };
 
-    const confirmPasswordReset = () => {
-        if (userToReset) {
-            const newPassword = 'password123'; // Mock new password
-            updateUser(userToReset.id, { password: newPassword });
-            addToast(`Password for ${userToReset.firstName} has been reset to "${newPassword}"`, 'success');
+    const confirmPasswordReset = async () => {
+        if (!newPassword || !confirmPassword) {
+            setPasswordError('Please enter both password fields');
+            return;
         }
-        setIsResetPwdModalOpen(false);
-        setUserToReset(null);
+        
+        if (newPassword.length < 6) {
+            setPasswordError('Password must be at least 6 characters');
+            return;
+        }
+        
+        if (newPassword !== confirmPassword) {
+            setPasswordError('Passwords do not match');
+            return;
+        }
+        
+        if (userToReset) {
+            try {
+                await updateUser(userToReset.id, { password: newPassword });
+                addToast(`Password for ${userToReset.firstName} ${userToReset.lastName} has been reset successfully`, 'success');
+                setIsResetPwdModalOpen(false);
+                setUserToReset(null);
+                setNewPassword('');
+                setConfirmPassword('');
+                setPasswordError('');
+            } catch (error) {
+                setPasswordError('Failed to reset password. Please try again.');
+            }
+        }
     };
 
     const timeoutOptions = [
@@ -195,11 +222,31 @@ const SettingsManager: React.FC = () => {
                 </div>
             </Modal>
              <Modal isOpen={isResetPwdModalOpen} onClose={() => setIsResetPwdModalOpen(false)} title="Reset Password" size="sm">
-                <p>Are you sure you want to reset the password for <strong>{userToReset?.firstName} {userToReset?.lastName}</strong>?</p>
-                <p className="text-sm text-gray-500 mt-2">The password will be reset to a default value: "password123".</p>
+                <p className="mb-4">Reset password for <strong>{userToReset?.firstName} {userToReset?.lastName}</strong></p>
+                <div className="space-y-4">
+                    <FormField
+                        id="newPassword"
+                        label="New Password"
+                        type="password"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        placeholder="Enter new password"
+                        required
+                    />
+                    <FormField
+                        id="confirmPassword"
+                        label="Confirm Password"
+                        type="password"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        placeholder="Confirm new password"
+                        required
+                    />
+                    {passwordError && <p className="text-sm text-red-600">{passwordError}</p>}
+                </div>
                 <div className="flex justify-end gap-2 mt-6">
                     <button onClick={() => setIsResetPwdModalOpen(false)} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300">Cancel</button>
-                    <button onClick={confirmPasswordReset} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Confirm Reset</button>
+                    <button onClick={confirmPasswordReset} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Reset Password</button>
                 </div>
             </Modal>
         </div>
