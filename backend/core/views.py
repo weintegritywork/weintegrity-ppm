@@ -5,13 +5,11 @@ from rest_framework.permissions import AllowAny
 from django.conf import settings
 from .mongo import get_db
 from .auth import create_token
-import os, json, re
+import os
 import random
 from datetime import datetime, timedelta
 from django.contrib.auth.hashers import make_password, check_password
 from .permissions import IsAdminOrPOForWrites, IsAdminForUserWrites
-import sib_api_v3_sdk
-from sib_api_v3_sdk.rest import ApiException
 
 
 def send_otp_email(to_email, otp):
