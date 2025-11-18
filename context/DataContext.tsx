@@ -195,20 +195,40 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const deleteUser = async (userId: string) => {
+    // First update all related data in backend
+    const userStories = stories.filter(s => s.assignedToId === userId);
+    const storyUpdatePromises = userStories.map(story =>
+      api.put('stories', story.id, { ...story, assignedToId: null })
+    );
+    
+    const userTeams = teams.filter(t => t.memberIds.includes(userId));
+    const teamUpdatePromises = userTeams.map(team => {
+      const updatedMemberIds = team.memberIds.filter(id => id !== userId);
+      return api.put('teams', team.id, { ...team, memberIds: updatedMemberIds });
+    });
+    
+    const userProjects = projects.filter(p => p.memberIds.includes(userId));
+    const projectUpdatePromises = userProjects.map(project => {
+      const updatedMemberIds = project.memberIds.filter(id => id !== userId);
+      return api.put('projects', project.id, { ...project, memberIds: updatedMemberIds });
+    });
+    
+    await Promise.all([...storyUpdatePromises, ...teamUpdatePromises, ...projectUpdatePromises]);
+    
+    // Now delete the user
     const result = await api.delete('users', userId);
     if (!result.error) {
-      // Update related data
-      setStories(prev => prev.map(story => 
-        story.assignedToId === userId ? { ...story, assignedToId: undefined } : story
-      ));
-      setTeams(prev => prev.map(team => ({
-        ...team,
-        memberIds: team.memberIds.filter(id => id !== userId),
-      })));
-      setProjects(prev => prev.map(project => ({
-        ...project,
-        memberIds: project.memberIds.filter(id => id !== userId),
-      })));
+      // Refresh data from backend
+      const [storiesRes, teamsRes, projectsRes] = await Promise.all([
+        api.get<Story[]>('stories'),
+        api.get<Team[]>('teams'),
+        api.get<Project[]>('projects')
+      ]);
+      
+      if (storiesRes.data) setStories(storiesRes.data);
+      if (teamsRes.data) setTeams(teamsRes.data);
+      if (projectsRes.data) setProjects(projectsRes.data);
+      
       setNotifications(prev => prev.filter(n => n.userId !== userId));
       setUsers(prev => prev.filter(u => u.id !== userId));
     } else {
@@ -219,11 +239,24 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const addTeam = async (team: Team) => {
     const result = await api.post<Team>('teams', team);
     if (result.data) {
+      // Update users in backend to assign them to this team
+      const userUpdatePromises = team.memberIds.map(userId => {
+        const user = users.find(u => u.id === userId);
+        if (user) {
+          return api.put('users', userId, { ...user, teamId: team.id });
+        }
+        return Promise.resolve();
+      });
+      
+      await Promise.all(userUpdatePromises);
+      
+      // Refresh users from backend
+      const usersRes = await api.get<User[]>('users');
+      if (usersRes.data) {
+        setUsers(usersRes.data);
+      }
+      
       setTeams(prev => [...prev, result.data!]);
-      // Update users assigned to this team
-      setUsers(prev => prev.map(u => 
-        team.memberIds.includes(u.id) ? { ...u, teamId: team.id } : u
-      ));
     } else {
       throw new Error(result.error || 'Failed to add team');
     }
@@ -239,36 +272,56 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       return acc;
     }, {} as any);
     
+    // If memberIds changed, update users in backend first
+    if (updatedData.memberIds) {
+      const removedMembers = team.memberIds.filter(id => !updatedData.memberIds!.includes(id));
+      const addedMembers = updatedData.memberIds.filter(id => !team.memberIds.includes(id));
+      
+      const userUpdatePromises = [
+        ...removedMembers.map(userId => {
+          const user = users.find(u => u.id === userId);
+          if (user) {
+            return api.put('users', userId, { ...user, teamId: null });
+          }
+          return Promise.resolve();
+        }),
+        ...addedMembers.map(userId => {
+          const user = users.find(u => u.id === userId);
+          if (user) {
+            return api.put('users', userId, { ...user, teamId: teamId });
+          }
+          return Promise.resolve();
+        })
+      ];
+      
+      await Promise.all(userUpdatePromises);
+      
+      // Unassign removed members from team stories in backend
+      if (removedMembers.length > 0) {
+        const storiesToUpdate = stories.filter(s => 
+          s.assignedTeamId === teamId && s.assignedToId && removedMembers.includes(s.assignedToId)
+        );
+        await Promise.all(storiesToUpdate.map(story =>
+          api.put('stories', story.id, { ...story, assignedToId: null })
+        ));
+      }
+    }
+    
     const result = await api.put<Team>('teams', teamId, { ...team, ...sanitizedData });
     if (result.data) {
       setTeams(prev => prev.map(t => t.id === teamId ? result.data! : t));
       
-      // If memberIds changed, update user teamIds accordingly
+      // Refresh users and stories from backend
       if (updatedData.memberIds) {
-        const removedMembers = team.memberIds.filter(id => !updatedData.memberIds!.includes(id));
-        const addedMembers = updatedData.memberIds.filter(id => !team.memberIds.includes(id));
+        const [usersRes, storiesRes] = await Promise.all([
+          api.get<User[]>('users'),
+          api.get<Story[]>('stories')
+        ]);
         
-        setUsers(prev => prev.map(u => {
-          // Remove teamId from users who were removed from team
-          if (removedMembers.includes(u.id)) {
-            return { ...u, teamId: undefined };
-          }
-          // Add teamId to users who were added to team
-          if (addedMembers.includes(u.id)) {
-            return { ...u, teamId: teamId };
-          }
-          return u;
-        }));
-        
-        // Unassign removed members from team stories
-        if (removedMembers.length > 0) {
-          setStories(prev => prev.map(s => 
-            s.assignedTeamId === teamId && s.assignedToId && removedMembers.includes(s.assignedToId)
-              ? { ...s, assignedToId: undefined }
-              : s
-          ));
-        }
+        if (usersRes.data) setUsers(usersRes.data);
+        if (storiesRes.data) setStories(storiesRes.data);
       }
+    }
       
       // If projectId changed, update user projectIds accordingly
       if (updatedData.projectId !== undefined) {
@@ -353,8 +406,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     
     const updatedMemberIds = Array.from(new Set([...team.memberIds, ...memberIds]));
     await updateTeam(teamId, { memberIds: updatedMemberIds });
-    setUsers(prev => prev.map(u => 
-      memberIds.includes(u.id) ? { ...u, teamId: teamId } : u
+    // updateTeam now handles backend updates and refreshes, no need to update local state here
     ));
     
     // Create notifications for newly added members
@@ -475,15 +527,34 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const deleteProject = async (projectId: string) => {
+    // First update teams and users in backend
+    const projectTeams = teams.filter(t => t.projectId === projectId);
+    const teamUpdatePromises = projectTeams.map(team =>
+      api.put('teams', team.id, { ...team, projectId: null })
+    );
+    
+    const projectUsers = users.filter(u => u.projectId === projectId);
+    const userUpdatePromises = projectUsers.map(user =>
+      api.put('users', user.id, { ...user, projectId: null })
+    );
+    
+    await Promise.all([...teamUpdatePromises, ...userUpdatePromises]);
+    
+    // Delete related stories
+    const projectStories = stories.filter(s => s.projectId === projectId);
+    await Promise.all(projectStories.map(s => deleteStory(s.id)));
+    
+    // Now delete the project
     const result = await api.delete('projects', projectId);
     if (!result.error) {
-      // Delete related stories
-      const projectStories = stories.filter(s => s.projectId === projectId);
-      await Promise.all(projectStories.map(s => deleteStory(s.id)));
+      // Refresh data from backend
+      const [teamsRes, usersRes] = await Promise.all([
+        api.get<Team[]>('teams'),
+        api.get<User[]>('users')
+      ]);
       
-      // Unassign teams and users
-      setTeams(prev => prev.map(t => t.projectId === projectId ? { ...t, projectId: undefined } : t));
-      setUsers(prev => prev.map(u => u.projectId === projectId ? { ...u, projectId: undefined } : u));
+      if (teamsRes.data) setTeams(teamsRes.data);
+      if (usersRes.data) setUsers(usersRes.data);
       
       // Delete project chats
       setProjectChats(prev => {
