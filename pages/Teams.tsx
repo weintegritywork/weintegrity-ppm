@@ -31,7 +31,15 @@ const Teams: React.FC = () => {
   const { currentUser } = authContext;
   const { settings } = settingsContext;
 
-  const availableUsers = useMemo(() => users.filter(u => !u.teamId), [users]);
+  const availableUsers = useMemo(() => {
+    const filtered = users.filter(u => !u.teamId);
+    console.log('=== AVAILABLE USERS DEBUG ===');
+    console.log('Total users:', users.length);
+    console.log('Users with teamId:', users.filter(u => u.teamId).map(u => ({ name: `${u.firstName} ${u.lastName}`, teamId: u.teamId })));
+    console.log('Available users (no teamId):', filtered.length);
+    console.log('============================');
+    return filtered;
+  }, [users]);
   
   const visibleTeams = useMemo(() => {
     if (!currentUser) return [];
