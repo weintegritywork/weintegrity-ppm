@@ -90,7 +90,7 @@ const TeamDetail: React.FC = () => {
     }
   };
 
-  const handleDeleteTeam = async () => {
+  const handleDeleteClick = () => {
     // Check if this team is assigned to a project and is the only team
     if (team.projectId) {
       const project = projects.find(p => p.id === team.projectId);
@@ -101,11 +101,15 @@ const TeamDetail: React.FC = () => {
           `Cannot delete team. "${team.name}" is the only team assigned to project "${project.name}". Please assign another team to the project first or delete the project.`,
           'error'
         );
-        setIsDeleteModalOpen(false);
         return;
       }
     }
     
+    // If validation passes, open the delete modal
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleDeleteTeam = async () => {
     try {
       await deleteTeam(team.id);
       toastContext.addToast('Team has been permanently deleted.', 'success');
@@ -211,7 +215,7 @@ const TeamDetail: React.FC = () => {
                         <p className="text-sm text-gray-500">This action is permanent and cannot be undone.</p>
                     </div>
                     <button
-                        onClick={() => setIsDeleteModalOpen(true)}
+                        onClick={handleDeleteClick}
                         className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors shadow-sm"
                     >
                         Delete
