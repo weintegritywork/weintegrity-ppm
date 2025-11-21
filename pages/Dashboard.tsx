@@ -20,6 +20,18 @@ const AdminDashboard: React.FC = () => {
         const projectStories = stories.filter(s => s.projectId === p.id);
         const completed = projectStories.filter(s => s.state === StoryState.Done).length;
         const total = projectStories.length;
+        
+        // Debug logging
+        console.log(`Project: ${p.name} (ID: ${p.id})`);
+        console.log(`  Total stories found: ${total}`);
+        console.log(`  Completed stories: ${completed}`);
+        console.log(`  All stories in system:`, stories.map(s => ({ 
+            id: s.id, 
+            projectId: s.projectId, 
+            state: s.state,
+            matches: s.projectId === p.id 
+        })));
+        
         return {
             name: p.name,
             completed,
