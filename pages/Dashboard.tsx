@@ -35,11 +35,11 @@ const AdminDashboard: React.FC = () => {
     }));
 
     const stats = [
-      { title: 'Total Projects', value: projects.length, link: '/projects', color: 'bg-indigo-500' },
-      { title: 'Ready Stories', value: stories.filter(s => s.state === StoryState.Ready).length, link: '/stories', filter: StoryState.Ready, color: 'bg-gray-500' },
-      { title: 'In Progress', value: stories.filter(s => s.state === StoryState.InProgress).length, link: '/stories', filter: StoryState.InProgress, color: 'bg-yellow-500' },
-      { title: 'In Test', value: stories.filter(s => s.state === StoryState.Test).length, link: '/stories', filter: StoryState.Test, color: 'bg-blue-500' },
-      { title: 'Done Stories', value: stories.filter(s => s.state === StoryState.Done).length, link: '/stories', filter: StoryState.Done, color: 'bg-green-500' },
+      { title: 'Total Projects', value: projects.length, link: '/projects', color: 'from-indigo-500 to-indigo-600', icon: '📊' },
+      { title: 'Ready Stories', value: stories.filter(s => s.state === StoryState.Ready).length, link: '/stories', filter: StoryState.Ready, color: 'from-gray-500 to-gray-600', icon: '📋' },
+      { title: 'In Progress', value: stories.filter(s => s.state === StoryState.InProgress).length, link: '/stories', filter: StoryState.InProgress, color: 'from-yellow-500 to-yellow-600', icon: '⏳' },
+      { title: 'In Test', value: stories.filter(s => s.state === StoryState.Test).length, link: '/stories', filter: StoryState.Test, color: 'from-blue-500 to-blue-600', icon: '🧪' },
+      { title: 'Done Stories', value: stories.filter(s => s.state === StoryState.Done).length, link: '/stories', filter: StoryState.Done, color: 'from-green-500 to-green-600', icon: '✅' },
     ];
 
 
@@ -51,36 +51,81 @@ const AdminDashboard: React.FC = () => {
                         key={stat.title}
                         to={stat.link}
                         state={stat.filter ? { prefilter: stat.filter } : undefined}
-                        className={`block p-4 rounded-xl shadow-md text-white ${stat.color} transition-transform duration-200 hover:scale-105 hover:shadow-lg`}
+                        className={`block p-6 rounded-xl shadow-md text-white bg-gradient-to-br ${stat.color} transition-all duration-300 hover:scale-105 hover:shadow-xl`}
                     >
-                        <div className="text-3xl font-bold">{stat.value}</div>
-                        <div className="text-sm font-medium opacity-90 mt-1">{stat.title}</div>
+                        <div className="text-4xl mb-2">{stat.icon}</div>
+                        <div className="text-4xl font-bold">{stat.value}</div>
+                        <div className="text-xs font-medium opacity-90 mt-2 uppercase tracking-wide">{stat.title}</div>
                     </Link>
                 ))}
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <Card title="Project Progress Overview" className="lg:col-span-2">
-                    <ResponsiveContainer width="100%" height={300}>
-                        <BarChart data={projectProgress}>
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="name" />
-                            <YAxis />
-                            <Tooltip />
-                            <Legend />
-                            <Bar dataKey="completed" stackId="a" fill="#3b82f6" name="Completed" />
-                            <Bar dataKey="pending" stackId="a" fill="#e5e7eb" name="Pending" />
-                        </BarChart>
-                    </ResponsiveContainer>
+                    {projectProgress.length > 0 ? (
+                        <ResponsiveContainer width="100%" height={300}>
+                            <BarChart data={projectProgress} layout="horizontal">
+                                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                                <XAxis type="number" />
+                                <YAxis dataKey="name" type="category" width={100} />
+                                <Tooltip 
+                                    contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px' }}
+                                    formatter={(value: any, name: string) => [value, name === 'completed' ? 'Completed' : 'Pending']}
+                                />
+                                <Legend />
+                                <Bar dataKey="completed" stackId="a" fill="url(#completedGradient)" name="Completed" radius={[0, 4, 4, 0]} />
+                                <Bar dataKey="pending" stackId="a" fill="#e5e7eb" name="Pending" radius={[0, 4, 4, 0]} />
+                                <defs>
+                                    <linearGradient id="completedGradient" x1="0" y1="0" x2="1" y2="0">
+                                        <stop offset="0%" stopColor="#3b82f6" />
+                                        <stop offset="100%" stopColor="#60a5fa" />
+                                    </linearGradient>
+                                </defs>
+                            </BarChart>
+                        </ResponsiveContainer>
+                    ) : (
+                        <div className="flex flex-col items-center justify-center h-64 text-gray-400">
+                            <div className="text-6xl mb-4">📊</div>
+                            <p className="text-lg font-medium">No projects yet</p>
+                            <p className="text-sm">Create your first project to see progress here</p>
+                        </div>
+                    )}
                 </Card>
                 <Card title="Story Status Distribution">
-                    <ResponsiveContainer width="100%" height={300}>
-                        <PieChart>
-                            <Pie data={storyStatusDistribution} cx="50%" cy="50%" labelLine={false} outerRadius={80} fill="#8884d8" dataKey="value" nameKey="name" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
-                                {storyStatusDistribution.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
-                            </Pie>
-                            <Tooltip />
-                        </PieChart>
-                    </ResponsiveContainer>
+                    {stories.length > 0 ? (
+                        <ResponsiveContainer width="100%" height={300}>
+                            <PieChart>
+                                <Pie 
+                                    data={storyStatusDistribution.filter(d => d.value > 0)} 
+                                    cx="50%" 
+                                    cy="50%" 
+                                    labelLine={false} 
+                                    innerRadius={60}
+                                    outerRadius={90} 
+                                    fill="#8884d8" 
+                                    dataKey="value" 
+                                    nameKey="name"
+                                    label={({ name, percent }) => percent > 0.05 ? `${(percent * 100).toFixed(0)}%` : ''}
+                                >
+                                    {storyStatusDistribution.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                    ))}
+                                </Pie>
+                                <Tooltip />
+                                <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle" className="text-2xl font-bold fill-gray-700">
+                                    {stories.length}
+                                </text>
+                                <text x="50%" y="58%" textAnchor="middle" dominantBaseline="middle" className="text-xs fill-gray-500">
+                                    Total Stories
+                                </text>
+                            </PieChart>
+                        </ResponsiveContainer>
+                    ) : (
+                        <div className="flex flex-col items-center justify-center h-64 text-gray-400">
+                            <div className="text-6xl mb-4">📝</div>
+                            <p className="text-lg font-medium">No stories yet</p>
+                            <p className="text-sm">Create your first story to see distribution</p>
+                        </div>
+                    )}
                 </Card>
             </div>
         </>
@@ -204,17 +249,20 @@ const EmployeeDashboard: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card title="My Stories Overview" className="md:col-span-2">
                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
-                    <div className="p-4 bg-blue-50 rounded-lg">
-                        <p className="text-3xl font-bold text-blue-600">{myStories.length}</p>
-                        <p className="text-sm font-medium text-gray-600">Total Assigned</p>
+                    <div className="p-6 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl hover:shadow-md transition-shadow">
+                        <div className="text-3xl mb-2">📊</div>
+                        <p className="text-4xl font-bold text-blue-600">{myStories.length}</p>
+                        <p className="text-xs font-medium text-gray-600 mt-2 uppercase tracking-wide">Total Assigned</p>
                     </div>
-                     <div className="p-4 bg-yellow-50 rounded-lg">
-                        <p className="text-3xl font-bold text-yellow-600">{myStories.filter(s => s.state === StoryState.InProgress).length}</p>
-                        <p className="text-sm font-medium text-gray-600">In Progress</p>
+                     <div className="p-6 bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl hover:shadow-md transition-shadow">
+                        <div className="text-3xl mb-2">⏳</div>
+                        <p className="text-4xl font-bold text-yellow-600">{myStories.filter(s => s.state === StoryState.InProgress).length}</p>
+                        <p className="text-xs font-medium text-gray-600 mt-2 uppercase tracking-wide">In Progress</p>
                     </div>
-                     <div className="p-4 bg-green-50 rounded-lg">
-                        <p className="text-3xl font-bold text-green-600">{myStories.filter(s => s.state === StoryState.Done).length}</p>
-                        <p className="text-sm font-medium text-gray-600">Completed</p>
+                     <div className="p-6 bg-gradient-to-br from-green-50 to-green-100 rounded-xl hover:shadow-md transition-shadow">
+                        <div className="text-3xl mb-2">✅</div>
+                        <p className="text-4xl font-bold text-green-600">{myStories.filter(s => s.state === StoryState.Done).length}</p>
+                        <p className="text-xs font-medium text-gray-600 mt-2 uppercase tracking-wide">Completed</p>
                     </div>
                 </div>
             </Card>
@@ -227,14 +275,38 @@ const EmployeeDashboard: React.FC = () => {
                 <p className="text-center text-sm text-gray-500 mt-2">Overall progress of your assigned project.</p>
             </Card>
              <Card title="My Story Statuses">
-                 <ResponsiveContainer width="100%" height={250}>
-                    <PieChart>
-                        <Pie data={storyStatusDistribution} cx="50%" cy="50%" labelLine={false} innerRadius={50} outerRadius={80} fill="#8884d8" dataKey="value" nameKey="name" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
-                            {storyStatusDistribution.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
-                        </Pie>
-                        <Tooltip />
-                    </PieChart>
-                </ResponsiveContainer>
+                 {myStories.length > 0 ? (
+                     <ResponsiveContainer width="100%" height={250}>
+                        <PieChart>
+                            <Pie 
+                                data={storyStatusDistribution} 
+                                cx="50%" 
+                                cy="50%" 
+                                labelLine={false} 
+                                innerRadius={50} 
+                                outerRadius={80} 
+                                fill="#8884d8" 
+                                dataKey="value" 
+                                nameKey="name" 
+                                label={({ percent }) => percent > 0.05 ? `${(percent * 100).toFixed(0)}%` : ''}
+                            >
+                                {storyStatusDistribution.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
+                            </Pie>
+                            <Tooltip />
+                            <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle" className="text-xl font-bold fill-gray-700">
+                                {myStories.length}
+                            </text>
+                            <text x="50%" y="58%" textAnchor="middle" dominantBaseline="middle" className="text-xs fill-gray-500">
+                                Stories
+                            </text>
+                        </PieChart>
+                    </ResponsiveContainer>
+                 ) : (
+                     <div className="flex flex-col items-center justify-center h-56 text-gray-400">
+                         <div className="text-5xl mb-3">📝</div>
+                         <p className="text-base font-medium">No stories assigned</p>
+                     </div>
+                 )}
             </Card>
             <Card title="My Team" className="md:col-span-2">
                 {myTeam ? (
