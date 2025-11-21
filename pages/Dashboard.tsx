@@ -24,6 +24,20 @@ const AdminDashboard: React.FC = () => {
 
     const { projects, stories } = dataContext;
 
+    const projectProgress = projects.map(p => {
+        const projectStories = stories.filter(s => s.projectId === p.id);
+        const completed = projectStories.filter(s => s.state === StoryState.Done).length;
+        const total = projectStories.length;
+        
+        return {
+            id: p.id,
+            name: p.name,
+            completed,
+            total,
+            progress: total > 0 ? (completed / total) * 100 : 0
+        };
+    });
+
     const storyStatusDistribution = Object.values(StoryState).map(state => ({
         name: state,
         value: stories.filter(s => s.state === state).length
@@ -55,6 +69,52 @@ const AdminDashboard: React.FC = () => {
                 ))}
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card title="Project Progress Overview">
+                    {projectProgress.length > 0 ? (
+                        <>
+                            <div className="space-y-4">
+                                {projectProgress.map(project => (
+                                    <div key={project.id}>
+                                        <div className="flex justify-between items-center mb-2">
+                                            <Link to={`/projects/${project.id}`} className="font-medium text-gray-800 hover:text-blue-600 transition-colors">
+                                                {project.name}
+                                            </Link>
+                                            <span className="text-sm font-semibold text-gray-600">
+                                                {project.completed}/{project.total} stories
+                                            </span>
+                                        </div>
+                                        <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                                            <div 
+                                                className="bg-gradient-to-r from-blue-500 to-blue-600 h-3 rounded-full transition-all duration-500 flex items-center justify-end pr-2"
+                                                style={{ width: `${project.progress}%` }}
+                                            >
+                                                {project.progress > 15 && (
+                                                    <span className="text-xs font-bold text-white">
+                                                        {project.progress.toFixed(0)}%
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                        {project.progress <= 15 && project.progress > 0 && (
+                                            <div className="text-xs font-semibold text-gray-600 mt-1 text-right">
+                                                {project.progress.toFixed(0)}%
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                            <p className="text-xs text-gray-500 text-center mt-4 italic border-t border-gray-200 pt-3">
+                                Progress is calculated based on stories assigned to each project
+                            </p>
+                        </>
+                    ) : (
+                        <div className="flex flex-col items-center justify-center h-64 text-gray-400">
+                            <div className="text-6xl mb-4">📊</div>
+                            <p className="text-lg font-medium">No projects yet</p>
+                            <p className="text-sm">Create your first project to see progress here</p>
+                        </div>
+                    )}
+                </Card>
                 <Card title="Story Status Distribution">
                     {stories.length > 0 ? (
                         <>
