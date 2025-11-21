@@ -54,17 +54,17 @@ const AdminDashboard: React.FC = () => {
 
     return (
         <>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-5">
                 {stats.map(stat => (
                     <Link
                         key={stat.title}
                         to={stat.link}
                         state={stat.filter ? { prefilter: stat.filter } : undefined}
-                        className={`block p-6 rounded-xl shadow-md text-white bg-gradient-to-br ${stat.color} transition-all duration-300 hover:scale-105 hover:shadow-xl`}
+                        className={`block p-4 rounded-lg shadow-sm text-white bg-gradient-to-br ${stat.color} transition-all duration-200 hover:shadow-md`}
                     >
-                        <div className="text-4xl mb-2">{stat.icon}</div>
-                        <div className="text-4xl font-bold">{stat.value}</div>
-                        <div className="text-xs font-medium opacity-90 mt-2 uppercase tracking-wide">{stat.title}</div>
+                        <div className="text-2xl mb-1">{stat.icon}</div>
+                        <div className="text-3xl font-bold">{stat.value}</div>
+                        <div className="text-xs font-medium opacity-90 mt-1 uppercase tracking-wide">{stat.title}</div>
                     </Link>
                 ))}
             </div>
