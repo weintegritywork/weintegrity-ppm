@@ -33,50 +33,55 @@ const Teams: React.FC = () => {
   const { settings } = settingsContext;
 
   const availableUsers = useMemo(() => {
-    // Filter users who don't have a teamId (null, undefined, or empty string)
+    const teamIds = teams.map(t => t.id);
+    
+    // Filter users who don't have a teamId OR have an orphaned teamId (pointing to deleted team)
     return users.filter(u => {
       const hasNoTeam = !u.teamId || u.teamId === null || u.teamId === '';
+      const hasOrphanedTeam = u.teamId && !teamIds.includes(u.teamId);
       const isNotAdminOrHR = u.role !== Role.Admin && u.role !== Role.HR;
-      return hasNoTeam && isNotAdminOrHR;
+      
+      return (hasNoTeam || hasOrphanedTeam) && isNotAdminOrHR;
     });
-  }, [users]);
+  }, [users, teams]);
   
-  // Auto-sync teamId for users on component mount
+  // Auto-sync and cleanup orphaned teamIds on component mount
   React.useEffect(() => {
-    const syncTeamMembers = async () => {
-      let needsSync = false;
-      
-      // Check if any users need syncing
-      for (const team of teams) {
-        for (const memberId of team.memberIds) {
-          const user = users.find(u => u.id === memberId);
-          if (user && user.teamId !== team.id) {
-            needsSync = true;
-            break;
-          }
+    const syncAndCleanup = async () => {
+      try {
+        const teamIds = teams.map(t => t.id);
+        
+        // Find users with orphaned teamIds (pointing to deleted teams)
+        const usersWithOrphanedTeams = users.filter(u => 
+          u.teamId && !teamIds.includes(u.teamId)
+        );
+        
+        // Clean up orphaned teamIds
+        if (usersWithOrphanedTeams.length > 0) {
+          console.log(`Cleaning up ${usersWithOrphanedTeams.length} users with orphaned teamIds`);
+          await Promise.all(
+            usersWithOrphanedTeams.map(user =>
+              dataContext.updateUser(user.id, { teamId: null })
+            )
+          );
         }
-        if (needsSync) break;
-      }
-      
-      // Only sync if needed
-      if (needsSync) {
-        try {
-          for (const team of teams) {
-            for (const memberId of team.memberIds) {
-              const user = users.find(u => u.id === memberId);
-              if (user && user.teamId !== team.id) {
-                await dataContext.updateUser(memberId, { teamId: team.id });
-              }
+        
+        // Sync team members
+        for (const team of teams) {
+          for (const memberId of team.memberIds) {
+            const user = users.find(u => u.id === memberId);
+            if (user && user.teamId !== team.id) {
+              await dataContext.updateUser(memberId, { teamId: team.id });
             }
           }
-        } catch (error) {
-          console.error('Auto-sync failed:', error);
         }
+      } catch (error) {
+        console.error('Auto-sync failed:', error);
       }
     };
     
-    if (teams.length > 0 && users.length > 0) {
-      syncTeamMembers();
+    if (users.length > 0) {
+      syncAndCleanup();
     }
   }, [teams, users, dataContext]);
   
