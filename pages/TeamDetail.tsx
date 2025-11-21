@@ -195,22 +195,43 @@ const TeamDetail: React.FC = () => {
           <Card title="Team Stories">
               {teamStories.length > 0 ? (
                    <ul className="space-y-3 max-h-96 overflow-y-auto">
-                   {teamStories.map((story: Story) => (
-                     <li key={story.id} className="p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                       <Link to={`/stories/${story.id}`} className="flex justify-between items-center">
-                         <div>
-                           <span className="font-semibold text-blue-600">{story.number}</span>
-                           <p className="text-sm text-gray-700">{story.shortDescription}</p>
-                         </div>
-                         <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                           story.state === StoryState.Done ? 'bg-green-100 text-green-800' : 
-                           story.state === StoryState.InProgress ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'
-                         }`}>
-                           {story.state}
-                         </span>
-                       </Link>
-                     </li>
-                   ))}
+                   {teamStories.map((story: Story) => {
+                     const assignedMember = story.assignedToId ? users.find(u => u.id === story.assignedToId) : null;
+                     return (
+                       <li key={story.id} className="p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                         <Link to={`/stories/${story.id}`} className="block">
+                           <div className="flex justify-between items-start mb-2">
+                             <div className="flex-1">
+                               <span className="font-semibold text-blue-600">{story.number}</span>
+                               <p className="text-sm text-gray-700 mt-1">{story.shortDescription}</p>
+                             </div>
+                             <span className={`px-2 py-1 text-xs font-semibold rounded-full whitespace-nowrap ml-2 ${
+                               story.state === StoryState.Done ? 'bg-green-100 text-green-800' : 
+                               story.state === StoryState.InProgress ? 'bg-yellow-100 text-yellow-800' : 
+                               story.state === StoryState.Test ? 'bg-blue-100 text-blue-800' :
+                               story.state === StoryState.Blocked ? 'bg-red-100 text-red-800' :
+                               'bg-gray-100 text-gray-800'
+                             }`}>
+                               {story.state}
+                             </span>
+                           </div>
+                           {assignedMember && (
+                             <div className="flex items-center gap-2 mt-2 text-xs text-gray-600">
+                               <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-semibold text-xs">
+                                 {assignedMember.firstName.charAt(0)}{assignedMember.lastName.charAt(0)}
+                               </div>
+                               <span>Assigned to: <span className="font-medium text-gray-800">{assignedMember.firstName} {assignedMember.lastName}</span></span>
+                             </div>
+                           )}
+                           {!assignedMember && (
+                             <div className="text-xs text-gray-500 mt-2">
+                               <span className="italic">Not assigned to anyone yet</span>
+                             </div>
+                           )}
+                         </Link>
+                       </li>
+                     );
+                   })}
                  </ul>
               ) : <p className="text-gray-500">No stories assigned to this team.</p>}
           </Card>
