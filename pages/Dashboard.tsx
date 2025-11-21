@@ -43,30 +43,59 @@ const AdminDashboard: React.FC = () => {
         value: stories.filter(s => s.state === state).length
     }));
 
-    const stats = [
-      { title: 'Total Projects', value: projects.length, link: '/projects', color: 'from-indigo-500 to-indigo-600', icon: '📊' },
-      { title: 'Ready Stories', value: stories.filter(s => s.state === StoryState.Ready).length, link: '/stories', filter: StoryState.Ready, color: 'from-gray-500 to-gray-600', icon: '📋' },
-      { title: 'In Progress', value: stories.filter(s => s.state === StoryState.InProgress).length, link: '/stories', filter: StoryState.InProgress, color: 'from-yellow-500 to-yellow-600', icon: '⏳' },
-      { title: 'In Test', value: stories.filter(s => s.state === StoryState.Test).length, link: '/stories', filter: StoryState.Test, color: 'from-blue-500 to-blue-600', icon: '🧪' },
-      { title: 'Done Stories', value: stories.filter(s => s.state === StoryState.Done).length, link: '/stories', filter: StoryState.Done, color: 'from-green-500 to-green-600', icon: '✅' },
-    ];
-
+    const completedProjects = projects.filter(p => {
+        const projectStories = stories.filter(s => s.projectId === p.id);
+        const completed = projectStories.filter(s => s.state === StoryState.Done).length;
+        return projectStories.length > 0 && completed === projectStories.length;
+    }).length;
 
     return (
         <>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
-                {stats.map(stat => (
-                    <Link
-                        key={stat.title}
-                        to={stat.link}
-                        state={stat.filter ? { prefilter: stat.filter } : undefined}
-                        className={`block p-6 rounded-xl shadow-md text-white bg-gradient-to-br ${stat.color} transition-all duration-300 hover:scale-105 hover:shadow-xl`}
-                    >
-                        <div className="text-4xl mb-2">{stat.icon}</div>
-                        <div className="text-4xl font-bold">{stat.value}</div>
-                        <div className="text-xs font-medium opacity-90 mt-2 uppercase tracking-wide">{stat.title}</div>
-                    </Link>
-                ))}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                {/* Projects Summary */}
+                <Card title="📊 Projects Overview">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <div className="text-4xl font-bold text-indigo-600">{projects.length}</div>
+                            <div className="text-sm text-gray-600 mt-1">Total Projects</div>
+                        </div>
+                        <div className="text-right">
+                            <div className="text-2xl font-semibold text-green-600">{completedProjects}</div>
+                            <div className="text-xs text-gray-500">Completed</div>
+                        </div>
+                        <Link to="/projects" className="px-4 py-2 bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200 transition-colors text-sm font-medium">
+                            View All
+                        </Link>
+                    </div>
+                </Card>
+
+                {/* Stories Summary */}
+                <Card title="📝 Stories Overview">
+                    <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium text-gray-700">Total Stories</span>
+                            <span className="text-2xl font-bold text-gray-800">{stories.length}</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3 text-sm">
+                            <Link to="/stories" state={{ prefilter: StoryState.Ready }} className="flex justify-between items-center p-2 bg-gray-50 rounded hover:bg-gray-100 transition-colors">
+                                <span className="text-gray-600">📋 Ready</span>
+                                <span className="font-semibold text-gray-700">{stories.filter(s => s.state === StoryState.Ready).length}</span>
+                            </Link>
+                            <Link to="/stories" state={{ prefilter: StoryState.InProgress }} className="flex justify-between items-center p-2 bg-yellow-50 rounded hover:bg-yellow-100 transition-colors">
+                                <span className="text-yellow-700">⏳ In Progress</span>
+                                <span className="font-semibold text-yellow-800">{stories.filter(s => s.state === StoryState.InProgress).length}</span>
+                            </Link>
+                            <Link to="/stories" state={{ prefilter: StoryState.Test }} className="flex justify-between items-center p-2 bg-blue-50 rounded hover:bg-blue-100 transition-colors">
+                                <span className="text-blue-600">🧪 In Test</span>
+                                <span className="font-semibold text-blue-700">{stories.filter(s => s.state === StoryState.Test).length}</span>
+                            </Link>
+                            <Link to="/stories" state={{ prefilter: StoryState.Done }} className="flex justify-between items-center p-2 bg-green-50 rounded hover:bg-green-100 transition-colors">
+                                <span className="text-green-600">✅ Done</span>
+                                <span className="font-semibold text-green-700">{stories.filter(s => s.state === StoryState.Done).length}</span>
+                            </Link>
+                        </div>
+                    </div>
+                </Card>
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <Card title="Project Progress Overview">
