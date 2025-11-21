@@ -132,7 +132,7 @@ const AdminDashboard: React.FC = () => {
                                         nameKey="name"
                                         label={({ name, percent }) => percent > 0.05 ? `${(percent * 100).toFixed(0)}%` : ''}
                                     >
-                                        {storyStatusDistribution.map((entry) => (
+                                        {storyStatusDistribution.filter(d => d.value > 0).map((entry) => (
                                             <Cell key={`cell-${entry.name}`} fill={STATE_COLORS[entry.name as StoryState]} />
                                         ))}
                                     </Pie>
@@ -329,7 +329,9 @@ const EmployeeDashboard: React.FC = () => {
                                     nameKey="name" 
                                     label={({ percent }) => percent > 0.05 ? `${(percent * 100).toFixed(0)}%` : ''}
                                 >
-                                    {storyStatusDistribution.map((entry) => <Cell key={`cell-${entry.name}`} fill={STATE_COLORS[entry.name as StoryState]} />)}
+                                    {storyStatusDistribution.map((entry) => (
+                                        <Cell key={`cell-${entry.name}`} fill={STATE_COLORS[entry.name as StoryState]} />
+                                    ))}
                                 </Pie>
                                 <Tooltip />
                                 <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle" className="text-xl font-bold fill-gray-700">
