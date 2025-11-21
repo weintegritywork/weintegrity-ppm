@@ -29,16 +29,22 @@ const AdminDashboard: React.FC = () => {
         const completed = projectStories.filter(s => s.state === StoryState.Done).length;
         const total = projectStories.length;
         
-        // Debug logging
-        console.log(`Project: ${p.name} (ID: ${p.id})`);
-        console.log(`  Total stories found: ${total}`);
-        console.log(`  Completed stories: ${completed}`);
-        console.log(`  All stories in system:`, stories.map(s => ({ 
-            id: s.id, 
-            projectId: s.projectId, 
-            state: s.state,
-            matches: s.projectId === p.id 
-        })));
+        // Enhanced debug logging
+        console.log('=== PROJECT PROGRESS DEBUG ===');
+        console.log(`Project: "${p.name}"`);
+        console.log(`Project ID: "${p.id}" (type: ${typeof p.id})`);
+        console.log(`Total stories found: ${total}`);
+        console.log(`Completed stories: ${completed}`);
+        console.log('\nAll stories in system:');
+        stories.forEach(s => {
+            console.log(`  Story: ${s.number}`);
+            console.log(`    projectId: "${s.projectId}" (type: ${typeof s.projectId})`);
+            console.log(`    state: ${s.state}`);
+            console.log(`    matches project: ${s.projectId === p.id}`);
+            console.log(`    strict match: ${s.projectId === p.id}`);
+            console.log(`    loose match: ${s.projectId == p.id}`);
+        });
+        console.log('==============================\n');
         
         return {
             name: p.name,
