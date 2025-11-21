@@ -288,8 +288,12 @@ const Stories: React.FC = () => {
                 <SelectDropdown
                     value={newStoryData.projectId}
                     onChange={(value) => handleNewStoryChange('projectId', value)}
-                    options={projects.map(p => ({ value: p.id, label: p.name }))}
-                    placeholder="Select a Project"
+                    options={projects.length > 0 
+                        ? projects.map(p => ({ value: p.id, label: p.name }))
+                        : [{ value: '', label: 'No projects available' }]
+                    }
+                    placeholder={projects.length > 0 ? "Select a Project" : "No projects yet"}
+                    disabled={projects.length === 0}
                 />
                 {formErrors.projectId && <p className="mt-1 text-sm text-red-600">{formErrors.projectId}</p>}
             </div>
@@ -299,9 +303,15 @@ const Stories: React.FC = () => {
                     <SelectDropdown
                         value={newStoryData.assignedTeamId}
                         onChange={(value) => handleNewStoryChange('assignedTeamId', value)}
-                        options={availableTeamsForProject.map(t => ({ value: t.id, label: t.name }))}
-                        placeholder={newStoryData.projectId ? 'Select a Team' : 'Select a Project first'}
-                        disabled={!newStoryData.projectId}
+                        options={availableTeamsForProject.length > 0
+                            ? availableTeamsForProject.map(t => ({ value: t.id, label: t.name }))
+                            : [{ value: '', label: newStoryData.projectId ? 'No teams in this project' : 'Select a project first' }]
+                        }
+                        placeholder={newStoryData.projectId 
+                            ? (availableTeamsForProject.length > 0 ? 'Select a Team' : 'No teams available')
+                            : 'Select a Project first'
+                        }
+                        disabled={!newStoryData.projectId || availableTeamsForProject.length === 0}
                     />
                     {formErrors.assignedTeamId && <p className="mt-1 text-sm text-red-600">{formErrors.assignedTeamId}</p>}
                 </div>
@@ -310,9 +320,15 @@ const Stories: React.FC = () => {
                     <SelectDropdown
                         value={newStoryData.assignedToId}
                         onChange={(value) => handleNewStoryChange('assignedToId', value)}
-                        options={availableMembersForTeam.map(m => ({ value: m.id, label: `${m.firstName} ${m.lastName}` }))}
-                        placeholder={newStoryData.assignedTeamId ? 'Select a Member' : 'Select a Team first'}
-                        disabled={!newStoryData.assignedTeamId}
+                        options={availableMembersForTeam.length > 0
+                            ? availableMembersForTeam.map(m => ({ value: m.id, label: `${m.firstName} ${m.lastName}` }))
+                            : [{ value: '', label: newStoryData.assignedTeamId ? 'No members in this team' : 'Select a team first' }]
+                        }
+                        placeholder={newStoryData.assignedTeamId 
+                            ? (availableMembersForTeam.length > 0 ? 'Select a Member' : 'No members available')
+                            : 'Select a Team first'
+                        }
+                        disabled={!newStoryData.assignedTeamId || availableMembersForTeam.length === 0}
                     />
                     {formErrors.assignedToId && <p className="mt-1 text-sm text-red-600">{formErrors.assignedToId}</p>}
                 </div>
