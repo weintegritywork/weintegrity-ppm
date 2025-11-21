@@ -24,26 +24,6 @@ const AdminDashboard: React.FC = () => {
 
     const { projects, stories } = dataContext;
 
-    const projectProgress = projects.map(p => {
-        const projectStories = stories.filter(s => s.projectId === p.id);
-        const completed = projectStories.filter(s => s.state === StoryState.Done).length;
-        const total = projectStories.length;
-        
-        const progressData = {
-            name: p.name,
-            completed,
-            pending: total - completed,
-            total,
-            progress: total > 0 ? (completed / total) * 100 : 0
-        };
-        
-        console.log('Project Progress Data:', progressData);
-        
-        return progressData;
-    });
-    
-    console.log('All Project Progress:', projectProgress);
-
     const storyStatusDistribution = Object.values(StoryState).map(state => ({
         name: state,
         value: stories.filter(s => s.state === state).length
@@ -74,42 +54,7 @@ const AdminDashboard: React.FC = () => {
                     </Link>
                 ))}
             </div>
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <Card title="Project Progress Overview" className="lg:col-span-2">
-                    {projectProgress.length > 0 ? (
-                        <>
-                            <ResponsiveContainer width="100%" height={300}>
-                                <BarChart data={projectProgress} layout="horizontal" margin={{ left: 20, right: 20 }}>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                                    <XAxis type="number" domain={[0, 'dataMax']} allowDecimals={false} />
-                                    <YAxis dataKey="name" type="category" width={150} />
-                                    <Tooltip 
-                                        contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px' }}
-                                        formatter={(value: any, name: string) => [value, name === 'completed' ? 'Completed' : 'Pending']}
-                                    />
-                                    <Legend />
-                                    <Bar dataKey="completed" stackId="a" fill="url(#completedGradient)" name="Completed" radius={[0, 4, 4, 0]} />
-                                    <Bar dataKey="pending" stackId="a" fill="#e5e7eb" name="Pending" radius={[0, 4, 4, 0]} />
-                                    <defs>
-                                        <linearGradient id="completedGradient" x1="0" y1="0" x2="1" y2="0">
-                                            <stop offset="0%" stopColor="#3b82f6" />
-                                            <stop offset="100%" stopColor="#60a5fa" />
-                                        </linearGradient>
-                                    </defs>
-                                </BarChart>
-                            </ResponsiveContainer>
-                            <p className="text-xs text-gray-500 text-center mt-3 italic">
-                                Progress is calculated based on stories assigned to each project
-                            </p>
-                        </>
-                    ) : (
-                        <div className="flex flex-col items-center justify-center h-64 text-gray-400">
-                            <div className="text-6xl mb-4">📊</div>
-                            <p className="text-lg font-medium">No projects yet</p>
-                            <p className="text-sm">Create your first project to see progress here</p>
-                        </div>
-                    )}
-                </Card>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <Card title="Story Status Distribution">
                     {stories.length > 0 ? (
                         <>
