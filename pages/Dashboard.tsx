@@ -29,31 +29,20 @@ const AdminDashboard: React.FC = () => {
         const completed = projectStories.filter(s => s.state === StoryState.Done).length;
         const total = projectStories.length;
         
-        // Enhanced debug logging
-        console.log('=== PROJECT PROGRESS DEBUG ===');
-        console.log(`Project: "${p.name}"`);
-        console.log(`Project ID: "${p.id}" (type: ${typeof p.id})`);
-        console.log(`Total stories found: ${total}`);
-        console.log(`Completed stories: ${completed}`);
-        console.log('\nAll stories in system:');
-        stories.forEach(s => {
-            console.log(`  Story: ${s.number}`);
-            console.log(`    projectId: "${s.projectId}" (type: ${typeof s.projectId})`);
-            console.log(`    state: ${s.state}`);
-            console.log(`    matches project: ${s.projectId === p.id}`);
-            console.log(`    strict match: ${s.projectId === p.id}`);
-            console.log(`    loose match: ${s.projectId == p.id}`);
-        });
-        console.log('==============================\n');
-        
-        return {
+        const progressData = {
             name: p.name,
             completed,
             pending: total - completed,
             total,
             progress: total > 0 ? (completed / total) * 100 : 0
         };
+        
+        console.log('Project Progress Data:', progressData);
+        
+        return progressData;
     });
+    
+    console.log('All Project Progress:', projectProgress);
 
     const storyStatusDistribution = Object.values(StoryState).map(state => ({
         name: state,
@@ -90,10 +79,10 @@ const AdminDashboard: React.FC = () => {
                     {projectProgress.length > 0 ? (
                         <>
                             <ResponsiveContainer width="100%" height={300}>
-                                <BarChart data={projectProgress} layout="horizontal">
+                                <BarChart data={projectProgress} layout="horizontal" margin={{ left: 20, right: 20 }}>
                                     <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                                    <XAxis type="number" />
-                                    <YAxis dataKey="name" type="category" width={100} />
+                                    <XAxis type="number" domain={[0, 'dataMax']} allowDecimals={false} />
+                                    <YAxis dataKey="name" type="category" width={150} />
                                     <Tooltip 
                                         contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px' }}
                                         formatter={(value: any, name: string) => [value, name === 'completed' ? 'Completed' : 'Pending']}
