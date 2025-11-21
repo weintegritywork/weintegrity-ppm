@@ -6,7 +6,15 @@ import Card from '../components/Card';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { Link } from 'react-router-dom';
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#a4de6c'];
+// Color mapping for story states
+const STATE_COLORS: Record<StoryState, string> = {
+    [StoryState.Draft]: '#9CA3AF',      // Gray
+    [StoryState.Ready]: '#6B7280',      // Dark Gray
+    [StoryState.InProgress]: '#F59E0B', // Amber/Yellow
+    [StoryState.Test]: '#3B82F6',       // Blue
+    [StoryState.Done]: '#10B981',       // Green
+    [StoryState.Blocked]: '#EF4444',    // Red
+};
 
 const ProductOwnerDashboard: React.FC = () => {
     const dataContext = useContext(DataContext);
@@ -76,16 +84,41 @@ const ProductOwnerDashboard: React.FC = () => {
                         ))}
                          {projectProgress.length === 0 && <p className="text-center text-gray-500 py-4">You do not own any projects.</p>}
                     </ul>
+                    {projectProgress.length > 0 && (
+                        <p className="text-xs text-gray-500 text-center mt-4 italic">
+                            Progress is calculated based on stories assigned to each project
+                        </p>
+                    )}
                 </Card>
                  <Card title="Story Status Distribution">
-                    <ResponsiveContainer width="100%" height={250}>
-                        <PieChart>
-                            <Pie data={storyStatusDistribution} cx="50%" cy="50%" labelLine={false} outerRadius={80} fill="#8884d8" dataKey="value" nameKey="name" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
-                                {storyStatusDistribution.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
-                            </Pie>
-                            <Tooltip />
-                        </PieChart>
-                    </ResponsiveContainer>
+                    {storyStatusDistribution.length > 0 ? (
+                        <>
+                            <ResponsiveContainer width="100%" height={200}>
+                                <PieChart>
+                                    <Pie data={storyStatusDistribution} cx="50%" cy="50%" labelLine={false} outerRadius={70} fill="#8884d8" dataKey="value" nameKey="name" label={({ percent }) => percent > 0.05 ? `${(percent * 100).toFixed(0)}%` : ''}>
+                                        {storyStatusDistribution.map((entry) => <Cell key={`cell-${entry.name}`} fill={STATE_COLORS[entry.name as StoryState]} />)}
+                                    </Pie>
+                                    <Tooltip />
+                                </PieChart>
+                            </ResponsiveContainer>
+                            <div className="mt-3 grid grid-cols-1 gap-2 text-xs">
+                                {storyStatusDistribution.map((entry) => (
+                                    <div key={entry.name} className="flex items-center gap-2">
+                                        <div 
+                                            className="w-3 h-3 rounded-sm flex-shrink-0" 
+                                            style={{ backgroundColor: STATE_COLORS[entry.name as StoryState] }}
+                                        />
+                                        <span className="text-gray-700">{entry.name} ({entry.value})</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </>
+                    ) : (
+                        <div className="flex flex-col items-center justify-center h-64 text-gray-400">
+                            <div className="text-5xl mb-3">📝</div>
+                            <p className="text-base font-medium">No stories yet</p>
+                        </div>
+                    )}
                 </Card>
             </div>
              <Card title="Quick Access">

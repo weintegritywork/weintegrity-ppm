@@ -8,7 +8,15 @@ import { Link } from 'react-router-dom';
 import ProductOwnerDashboard from './ProductOwnerDashboard';
 import PageHeader from '../components/PageHeader';
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#a4de6c'];
+// Color mapping for story states
+const STATE_COLORS: Record<StoryState, string> = {
+    [StoryState.Draft]: '#9CA3AF',      // Gray
+    [StoryState.Ready]: '#6B7280',      // Dark Gray
+    [StoryState.InProgress]: '#F59E0B', // Amber/Yellow
+    [StoryState.Test]: '#3B82F6',       // Blue
+    [StoryState.Done]: '#10B981',       // Green
+    [StoryState.Blocked]: '#EF4444',    // Red
+};
 
 const AdminDashboard: React.FC = () => {
     const dataContext = useContext(DataContext);
@@ -74,26 +82,31 @@ const AdminDashboard: React.FC = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <Card title="Project Progress Overview" className="lg:col-span-2">
                     {projectProgress.length > 0 ? (
-                        <ResponsiveContainer width="100%" height={300}>
-                            <BarChart data={projectProgress} layout="horizontal">
-                                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                                <XAxis type="number" />
-                                <YAxis dataKey="name" type="category" width={100} />
-                                <Tooltip 
-                                    contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px' }}
-                                    formatter={(value: any, name: string) => [value, name === 'completed' ? 'Completed' : 'Pending']}
-                                />
-                                <Legend />
-                                <Bar dataKey="completed" stackId="a" fill="url(#completedGradient)" name="Completed" radius={[0, 4, 4, 0]} />
-                                <Bar dataKey="pending" stackId="a" fill="#e5e7eb" name="Pending" radius={[0, 4, 4, 0]} />
-                                <defs>
-                                    <linearGradient id="completedGradient" x1="0" y1="0" x2="1" y2="0">
-                                        <stop offset="0%" stopColor="#3b82f6" />
-                                        <stop offset="100%" stopColor="#60a5fa" />
-                                    </linearGradient>
-                                </defs>
-                            </BarChart>
-                        </ResponsiveContainer>
+                        <>
+                            <ResponsiveContainer width="100%" height={300}>
+                                <BarChart data={projectProgress} layout="horizontal">
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                                    <XAxis type="number" />
+                                    <YAxis dataKey="name" type="category" width={100} />
+                                    <Tooltip 
+                                        contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px' }}
+                                        formatter={(value: any, name: string) => [value, name === 'completed' ? 'Completed' : 'Pending']}
+                                    />
+                                    <Legend />
+                                    <Bar dataKey="completed" stackId="a" fill="url(#completedGradient)" name="Completed" radius={[0, 4, 4, 0]} />
+                                    <Bar dataKey="pending" stackId="a" fill="#e5e7eb" name="Pending" radius={[0, 4, 4, 0]} />
+                                    <defs>
+                                        <linearGradient id="completedGradient" x1="0" y1="0" x2="1" y2="0">
+                                            <stop offset="0%" stopColor="#3b82f6" />
+                                            <stop offset="100%" stopColor="#60a5fa" />
+                                        </linearGradient>
+                                    </defs>
+                                </BarChart>
+                            </ResponsiveContainer>
+                            <p className="text-xs text-gray-500 text-center mt-3 italic">
+                                Progress is calculated based on stories assigned to each project
+                            </p>
+                        </>
                     ) : (
                         <div className="flex flex-col items-center justify-center h-64 text-gray-400">
                             <div className="text-6xl mb-4">📊</div>
@@ -104,33 +117,46 @@ const AdminDashboard: React.FC = () => {
                 </Card>
                 <Card title="Story Status Distribution">
                     {stories.length > 0 ? (
-                        <ResponsiveContainer width="100%" height={300}>
-                            <PieChart>
-                                <Pie 
-                                    data={storyStatusDistribution.filter(d => d.value > 0)} 
-                                    cx="50%" 
-                                    cy="50%" 
-                                    labelLine={false} 
-                                    innerRadius={60}
-                                    outerRadius={90} 
-                                    fill="#8884d8" 
-                                    dataKey="value" 
-                                    nameKey="name"
-                                    label={({ name, percent }) => percent > 0.05 ? `${(percent * 100).toFixed(0)}%` : ''}
-                                >
-                                    {storyStatusDistribution.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                    ))}
-                                </Pie>
-                                <Tooltip />
-                                <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle" className="text-2xl font-bold fill-gray-700">
-                                    {stories.length}
-                                </text>
-                                <text x="50%" y="58%" textAnchor="middle" dominantBaseline="middle" className="text-xs fill-gray-500">
-                                    Total Stories
-                                </text>
-                            </PieChart>
-                        </ResponsiveContainer>
+                        <>
+                            <ResponsiveContainer width="100%" height={250}>
+                                <PieChart>
+                                    <Pie 
+                                        data={storyStatusDistribution.filter(d => d.value > 0)} 
+                                        cx="50%" 
+                                        cy="50%" 
+                                        labelLine={false} 
+                                        innerRadius={60}
+                                        outerRadius={90} 
+                                        fill="#8884d8" 
+                                        dataKey="value" 
+                                        nameKey="name"
+                                        label={({ name, percent }) => percent > 0.05 ? `${(percent * 100).toFixed(0)}%` : ''}
+                                    >
+                                        {storyStatusDistribution.map((entry) => (
+                                            <Cell key={`cell-${entry.name}`} fill={STATE_COLORS[entry.name as StoryState]} />
+                                        ))}
+                                    </Pie>
+                                    <Tooltip />
+                                    <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle" className="text-2xl font-bold fill-gray-700">
+                                        {stories.length}
+                                    </text>
+                                    <text x="50%" y="58%" textAnchor="middle" dominantBaseline="middle" className="text-xs fill-gray-500">
+                                        Total Stories
+                                    </text>
+                                </PieChart>
+                            </ResponsiveContainer>
+                            <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
+                                {storyStatusDistribution.filter(d => d.value > 0).map((entry) => (
+                                    <div key={entry.name} className="flex items-center gap-2">
+                                        <div 
+                                            className="w-3 h-3 rounded-sm flex-shrink-0" 
+                                            style={{ backgroundColor: STATE_COLORS[entry.name as StoryState] }}
+                                        />
+                                        <span className="text-gray-700">{entry.name} ({entry.value})</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </>
                     ) : (
                         <div className="flex flex-col items-center justify-center h-64 text-gray-400">
                             <div className="text-6xl mb-4">📝</div>
@@ -288,31 +314,44 @@ const EmployeeDashboard: React.FC = () => {
             </Card>
              <Card title="My Story Statuses">
                  {myStories.length > 0 ? (
-                     <ResponsiveContainer width="100%" height={250}>
-                        <PieChart>
-                            <Pie 
-                                data={storyStatusDistribution} 
-                                cx="50%" 
-                                cy="50%" 
-                                labelLine={false} 
-                                innerRadius={50} 
-                                outerRadius={80} 
-                                fill="#8884d8" 
-                                dataKey="value" 
-                                nameKey="name" 
-                                label={({ percent }) => percent > 0.05 ? `${(percent * 100).toFixed(0)}%` : ''}
-                            >
-                                {storyStatusDistribution.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
-                            </Pie>
-                            <Tooltip />
-                            <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle" className="text-xl font-bold fill-gray-700">
-                                {myStories.length}
-                            </text>
-                            <text x="50%" y="58%" textAnchor="middle" dominantBaseline="middle" className="text-xs fill-gray-500">
-                                Stories
-                            </text>
-                        </PieChart>
-                    </ResponsiveContainer>
+                     <>
+                         <ResponsiveContainer width="100%" height={200}>
+                            <PieChart>
+                                <Pie 
+                                    data={storyStatusDistribution} 
+                                    cx="50%" 
+                                    cy="50%" 
+                                    labelLine={false} 
+                                    innerRadius={50} 
+                                    outerRadius={70} 
+                                    fill="#8884d8" 
+                                    dataKey="value" 
+                                    nameKey="name" 
+                                    label={({ percent }) => percent > 0.05 ? `${(percent * 100).toFixed(0)}%` : ''}
+                                >
+                                    {storyStatusDistribution.map((entry) => <Cell key={`cell-${entry.name}`} fill={STATE_COLORS[entry.name as StoryState]} />)}
+                                </Pie>
+                                <Tooltip />
+                                <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle" className="text-xl font-bold fill-gray-700">
+                                    {myStories.length}
+                                </text>
+                                <text x="50%" y="58%" textAnchor="middle" dominantBaseline="middle" className="text-xs fill-gray-500">
+                                    Stories
+                                </text>
+                            </PieChart>
+                        </ResponsiveContainer>
+                        <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                            {storyStatusDistribution.map((entry) => (
+                                <div key={entry.name} className="flex items-center gap-2">
+                                    <div 
+                                        className="w-3 h-3 rounded-sm flex-shrink-0" 
+                                        style={{ backgroundColor: STATE_COLORS[entry.name as StoryState] }}
+                                    />
+                                    <span className="text-gray-700">{entry.name} ({entry.value})</span>
+                                </div>
+                            ))}
+                        </div>
+                     </>
                  ) : (
                      <div className="flex flex-col items-center justify-center h-56 text-gray-400">
                          <div className="text-5xl mb-3">📝</div>
