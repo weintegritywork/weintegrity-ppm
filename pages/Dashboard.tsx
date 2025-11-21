@@ -445,7 +445,7 @@ const Dashboard: React.FC = () => {
 
   return (
     <div>
-      <PageHeader title={`Welcome, ${currentUser?.firstName}!`} showBackButton={false} />
+      <PageHeader title={`Welcome, ${currentUser?.firstName}!`} showBackButton={false} showDateTime={true} />
       {renderDashboard()}
     </div>
   );
