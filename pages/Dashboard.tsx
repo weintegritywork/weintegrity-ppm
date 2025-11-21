@@ -44,29 +44,27 @@ const AdminDashboard: React.FC = () => {
     }));
 
     const stats = [
-      { title: 'Projects', value: projects.length, link: '/projects', color: 'bg-indigo-500', icon: '📊' },
-      { title: 'Ready', value: stories.filter(s => s.state === StoryState.Ready).length, link: '/stories', filter: StoryState.Ready, color: 'bg-gray-500', icon: '📋' },
-      { title: 'In Progress', value: stories.filter(s => s.state === StoryState.InProgress).length, link: '/stories', filter: StoryState.InProgress, color: 'bg-yellow-500', icon: '⏳' },
-      { title: 'In Test', value: stories.filter(s => s.state === StoryState.Test).length, link: '/stories', filter: StoryState.Test, color: 'bg-blue-500', icon: '🧪' },
-      { title: 'Done', value: stories.filter(s => s.state === StoryState.Done).length, link: '/stories', filter: StoryState.Done, color: 'bg-green-500', icon: '✅' },
+      { title: 'Total Projects', value: projects.length, link: '/projects', color: 'from-indigo-500 to-indigo-600', icon: '📊' },
+      { title: 'Ready Stories', value: stories.filter(s => s.state === StoryState.Ready).length, link: '/stories', filter: StoryState.Ready, color: 'from-gray-500 to-gray-600', icon: '📋' },
+      { title: 'In Progress', value: stories.filter(s => s.state === StoryState.InProgress).length, link: '/stories', filter: StoryState.InProgress, color: 'from-yellow-500 to-yellow-600', icon: '⏳' },
+      { title: 'In Test', value: stories.filter(s => s.state === StoryState.Test).length, link: '/stories', filter: StoryState.Test, color: 'from-blue-500 to-blue-600', icon: '🧪' },
+      { title: 'Done Stories', value: stories.filter(s => s.state === StoryState.Done).length, link: '/stories', filter: StoryState.Done, color: 'from-green-500 to-green-600', icon: '✅' },
     ];
 
 
     return (
         <>
-            <div className="flex flex-wrap gap-2 mb-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
                 {stats.map(stat => (
                     <Link
                         key={stat.title}
                         to={stat.link}
                         state={stat.filter ? { prefilter: stat.filter } : undefined}
-                        className={`flex items-center gap-2 px-3 py-2 rounded-lg ${stat.color} text-white shadow-sm hover:shadow-md transition-shadow`}
+                        className={`block p-6 rounded-xl shadow-md text-white bg-gradient-to-br ${stat.color} transition-all duration-300 hover:scale-105 hover:shadow-xl`}
                     >
-                        <span className="text-lg">{stat.icon}</span>
-                        <div className="flex items-baseline gap-1">
-                            <span className="text-xl font-bold">{stat.value}</span>
-                            <span className="text-xs font-medium opacity-90">{stat.title}</span>
-                        </div>
+                        <div className="text-4xl mb-2">{stat.icon}</div>
+                        <div className="text-4xl font-bold">{stat.value}</div>
+                        <div className="text-xs font-medium opacity-90 mt-2 uppercase tracking-wide">{stat.title}</div>
                     </Link>
                 ))}
             </div>
