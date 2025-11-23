@@ -8,8 +8,10 @@ import { api } from '../utils/api';
 import Card from '../components/Card';
 import FormField from '../components/FormField';
 import { isEmailUnique, isPhoneUnique } from '../utils/validators';
+import { isPasswordStrong } from '../utils/passwordValidator';
 import PageHeader from '../components/PageHeader';
 import SelectDropdown from '../components/SelectDropdown';
+import PasswordStrengthIndicator from '../components/PasswordStrengthIndicator';
 
 const Register: React.FC = () => {
   const navigate = useNavigate();
@@ -61,8 +63,12 @@ const Register: React.FC = () => {
     if (!formData.phone) newErrors.phone = 'Phone is required';
     else if (!isPhoneUnique(formData.phone, users)) newErrors.phone = 'Phone number already exists';
     if (!formData.dateOfJoining) newErrors.dateOfJoining = 'Date of joining is required';
-    if (!formData.password || formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters long.';
+    if (!formData.password) {
+      newErrors.password = 'Password is required';
+    } else if (formData.password.length < 8) {
+      newErrors.password = 'Password must be at least 8 characters long';
+    } else if (!isPasswordStrong(formData.password)) {
+      newErrors.password = 'Password is not strong enough. Please follow the suggestions below.';
     }
     if (!formData.role) newErrors.role = 'Role is required';
     if (!formData.department) newErrors.department = 'Department is required';
@@ -161,7 +167,10 @@ const Register: React.FC = () => {
             <FormField id="email" label="Email" type="email" value={formData.email} onChange={handleChange} required error={errors.email} />
             <FormField id="phone" label="Phone" value={formData.phone} onChange={handleChange} required error={errors.phone} />
             <FormField id="dateOfJoining" label="Date of Joining" type="date" value={formData.dateOfJoining} onChange={handleChange} required error={errors.dateOfJoining} />
-            <FormField id="password" label="Password" type="password" value={formData.password || ''} onChange={handleChange} required error={errors.password} />
+            <div>
+              <FormField id="password" label="Password" type="password" value={formData.password || ''} onChange={handleChange} required error={errors.password} />
+              <PasswordStrengthIndicator password={formData.password || ''} />
+            </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Role <span className="text-red-500">*</span>
