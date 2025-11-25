@@ -105,6 +105,7 @@ else:
 
 # Additional CORS settings
 CORS_ALLOW_CREDENTIALS = True
+CORS_PREFLIGHT_MAX_AGE = 86400  # 24 hours
 CORS_ALLOW_HEADERS = [
     'accept',
     'accept-encoding',
@@ -123,6 +124,10 @@ CORS_ALLOW_METHODS = [
     'PATCH',
     'POST',
     'PUT',
+]
+CORS_EXPOSE_HEADERS = [
+    'content-type',
+    'authorization',
 ]
 
 # DRF
