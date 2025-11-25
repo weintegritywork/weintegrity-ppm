@@ -507,6 +507,21 @@ const Login: React.FC = () => {
           background: linear-gradient(135deg, #6366f1 0%, #3b82f6 100%);
           transition: all 0.3s ease;
           box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.3), 0 2px 4px -1px rgba(99, 102, 241, 0.2);
+          position: relative;
+          overflow: hidden;
+        }
+        .btn-primary::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: -100%;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+          transition: left 0.5s ease;
+        }
+        .glass-card:hover .btn-primary::before {
+          left: 100%;
         }
         .btn-primary:hover:not(:disabled) {
           background: linear-gradient(135deg, #4f46e5 0%, #2563eb 100%);
@@ -521,6 +536,9 @@ const Login: React.FC = () => {
           cursor: not-allowed;
           opacity: 0.7;
           box-shadow: none;
+        }
+        .btn-primary:disabled::before {
+          display: none;
         }
         .glass-card {
           background: rgba(255, 255, 255, 0.7);
