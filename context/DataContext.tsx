@@ -32,8 +32,8 @@ export interface DataContextType {
   markAllNotificationsAsRead: (userId: string) => Promise<void>;
   deleteNotification: (notificationId: string) => Promise<void>;
   refreshData: () => Promise<void>;
-  fetchStoryChats: (storyId: string) => Promise<void>;
-  fetchProjectChats: (projectId: string) => Promise<void>;
+  fetchStoryChats: (storyId: string, forceRefresh?: boolean) => Promise<void>;
+  fetchProjectChats: (projectId: string, forceRefresh?: boolean) => Promise<void>;
   isDataReady: boolean;
 }
 
@@ -718,9 +718,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  const fetchStoryChats = async (storyId: string) => {
-    // Only fetch if not already loaded
-    if (storyChats[storyId]) return;
+  const fetchStoryChats = async (storyId: string, forceRefresh = false) => {
+    // Only fetch if not already loaded (unless force refresh)
+    if (storyChats[storyId] && !forceRefresh) return;
     
     try {
       const res = await api.getStoryChats(storyId);
@@ -735,9 +735,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  const fetchProjectChats = async (projectId: string) => {
-    // Only fetch if not already loaded
-    if (projectChats[projectId]) return;
+  const fetchProjectChats = async (projectId: string, forceRefresh = false) => {
+    // Only fetch if not already loaded (unless force refresh)
+    if (projectChats[projectId] && !forceRefresh) return;
     
     try {
       const res = await api.getProjectChats(projectId);
