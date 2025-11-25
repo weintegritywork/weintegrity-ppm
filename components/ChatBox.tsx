@@ -48,11 +48,15 @@ const ChatBox: React.FC<ChatBoxProps> = ({ chatId, chatType, permissions }) => {
 
   const { isConnected, sendMessage: sendWsMessage } = useWebSocket(wsUrl, {
     onMessage: (data) => {
+      console.log('[ChatBox] WebSocket message received:', data);
       if (data.type === 'chat_message') {
+        console.log('[ChatBox] Chat message detected, refreshing...');
         // Force refresh messages when new message arrives via WebSocket
         if (chatType === 'story') {
+          console.log('[ChatBox] Fetching story chats for:', chatId);
           dataContext.fetchStoryChats(chatId, true);
         } else {
+          console.log('[ChatBox] Fetching project chats for:', chatId);
           dataContext.fetchProjectChats(chatId, true);
         }
       }

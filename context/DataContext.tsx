@@ -719,12 +719,19 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const fetchStoryChats = async (storyId: string, forceRefresh = false) => {
+    console.log(`[DataContext] fetchStoryChats called for ${storyId}, forceRefresh: ${forceRefresh}`);
     // Only fetch if not already loaded (unless force refresh)
-    if (storyChats[storyId] && !forceRefresh) return;
+    if (storyChats[storyId] && !forceRefresh) {
+      console.log(`[DataContext] Skipping fetch - already loaded and not forcing refresh`);
+      return;
+    }
     
     try {
+      console.log(`[DataContext] Fetching story chats from API...`);
       const res = await api.getStoryChats(storyId);
+      console.log(`[DataContext] API response:`, res);
       if (res.data) {
+        console.log(`[DataContext] Setting story chats with ${res.data.messages?.length || 0} messages`);
         setStoryChats(prev => ({
           ...prev,
           [storyId]: res.data.messages || []
@@ -736,12 +743,19 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const fetchProjectChats = async (projectId: string, forceRefresh = false) => {
+    console.log(`[DataContext] fetchProjectChats called for ${projectId}, forceRefresh: ${forceRefresh}`);
     // Only fetch if not already loaded (unless force refresh)
-    if (projectChats[projectId] && !forceRefresh) return;
+    if (projectChats[projectId] && !forceRefresh) {
+      console.log(`[DataContext] Skipping fetch - already loaded and not forcing refresh`);
+      return;
+    }
     
     try {
+      console.log(`[DataContext] Fetching project chats from API...`);
       const res = await api.getProjectChats(projectId);
+      console.log(`[DataContext] API response:`, res);
       if (res.data) {
+        console.log(`[DataContext] Setting project chats with ${res.data.messages?.length || 0} messages`);
         setProjectChats(prev => ({
           ...prev,
           [projectId]: res.data.messages || []
