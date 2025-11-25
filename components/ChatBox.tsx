@@ -31,6 +31,8 @@ const ChatBox: React.FC<ChatBoxProps> = ({ chatId, chatType, permissions }) => {
   const [selectedMessages, setSelectedMessages] = useState<Set<string>>(new Set());
   const [selectionMode, setSelectionMode] = useState(false);
   const [focusedMessageIndex, setFocusedMessageIndex] = useState<number>(-1);
+  const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   if (!dataContext || !authContext || !toastContext) return null;
 
@@ -57,8 +59,11 @@ const ChatBox: React.FC<ChatBoxProps> = ({ chatId, chatType, permissions }) => {
   const hasMoreMessages = filteredMessages.length > displayCount;
 
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    // Only auto-scroll when new messages arrive, not when selecting messages
+    if (shouldAutoScroll) {
+      chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages.length, shouldAutoScroll]); // Only depend on message count, not the entire messages array
 
   // Auto-refresh messages every 10 seconds
   useEffect(() => {
@@ -157,12 +162,17 @@ const ChatBox: React.FC<ChatBoxProps> = ({ chatId, chatType, permissions }) => {
   
   const handleDeleteConfirm = async () => {
     if (messageToDelete) {
-      try {
-        await deleteChatMessage(chatId, chatType, messageToDelete.id);
-        addToast('Message deleted.', 'info');
-        setMessageToDelete(null);
-      } catch (error) {
-        addToast('Failed to delete message. Please try again.', 'error');
+      // Check if it's a bulk delete
+      if (messageToDelete.id === 'BULK_DELETE') {
+        await handleBulkDeleteConfirm();
+      } else {
+        try {
+          await deleteChatMessage(chatId, chatType, messageToDelete.id);
+          addToast('Message deleted.', 'info');
+          setMessageToDelete(null);
+        } catch (error) {
+          addToast('Failed to delete message. Please try again.', 'error');
+        }
       }
     }
   };
@@ -195,12 +205,28 @@ const ChatBox: React.FC<ChatBoxProps> = ({ chatId, chatType, permissions }) => {
   };
 
   const handleLoadMore = () => {
+    setShouldAutoScroll(false); // Disable auto-scroll when loading older messages
     setDisplayCount(prev => prev + 50);
   };
+
+  // Detect if user is at the bottom of the chat
+  useEffect(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      const isAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 50;
+      setShouldAutoScroll(isAtBottom);
+    };
+
+    container.addEventListener('scroll', handleScroll);
+    return () => container.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const handleMessageClick = (msgId: string, event: React.MouseEvent) => {
     if (event.ctrlKey || event.metaKey) {
       // Ctrl+Click to toggle selection
+      setShouldAutoScroll(false); // Disable auto-scroll when selecting messages
       setSelectionMode(true);
       setSelectedMessages(prev => {
         const newSet = new Set(prev);
@@ -214,7 +240,13 @@ const ChatBox: React.FC<ChatBoxProps> = ({ chatId, chatType, permissions }) => {
     }
   };
 
-  const handleBulkDelete = async () => {
+  const handleBulkDelete = () => {
+    if (selectedMessages.size === 0) return;
+    // Set a special flag to indicate bulk delete
+    setMessageToDelete({ id: 'BULK_DELETE', authorId: '', timestamp: '', text: '' } as ChatMessage);
+  };
+
+  const handleBulkDeleteConfirm = async () => {
     if (selectedMessages.size === 0) return;
     
     try {
@@ -227,6 +259,8 @@ const ChatBox: React.FC<ChatBoxProps> = ({ chatId, chatType, permissions }) => {
       addToast(`${selectedMessages.size} message(s) deleted`, 'success');
       setSelectedMessages(new Set());
       setSelectionMode(false);
+      setMessageToDelete(null);
+      setShouldAutoScroll(true); // Re-enable auto-scroll after deletion
     } catch (error) {
       addToast('Failed to delete messages', 'error');
     }
@@ -235,6 +269,7 @@ const ChatBox: React.FC<ChatBoxProps> = ({ chatId, chatType, permissions }) => {
   const handleCancelSelection = () => {
     setSelectedMessages(new Set());
     setSelectionMode(false);
+    setShouldAutoScroll(true); // Re-enable auto-scroll when exiting selection mode
   };
 
   // Keyboard navigation
@@ -323,7 +358,7 @@ const ChatBox: React.FC<ChatBoxProps> = ({ chatId, chatType, permissions }) => {
           background: #94a3b8;
         }
       `}</style>
-      <div className="flex flex-col h-[600px] bg-gradient-to-b from-gray-50 to-gray-100 rounded-2xl shadow-lg overflow-hidden">
+      <div className="flex flex-col h-[600px] bg-gradient-to-b from-gray-50 to-gray-100 rounded-2xl shadow-lg overflow-hidden relative">
         {/* Search Bar & Selection Mode */}
         <div className="p-4 border-b border-gray-200 bg-white backdrop-blur-sm bg-opacity-95 sticky top-0 z-10">
           {selectionMode ? (
@@ -392,7 +427,7 @@ const ChatBox: React.FC<ChatBoxProps> = ({ chatId, chatType, permissions }) => {
           )}
         </div>
         
-        <div className="flex-1 overflow-y-auto p-4 space-y-3 scroll-smooth" style={{
+        <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 space-y-3 scroll-smooth" style={{
           backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23e5e7eb\' fill-opacity=\'0.15\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
         }}>
           {hasMoreMessages && (
@@ -449,18 +484,27 @@ const ChatBox: React.FC<ChatBoxProps> = ({ chatId, chatType, permissions }) => {
                             <img 
                               src={msg.attachment.url} 
                               alt={msg.attachment.name}
+                              loading="lazy"
                               className={`rounded transition-all duration-300 ${
                                 imagePreview?.url === msg.attachment.url 
                                   ? 'w-full h-auto cursor-zoom-out' 
                                   : 'max-w-[200px] max-h-[150px] cursor-zoom-in hover:opacity-90'
                               }`}
-                              style={{ objectFit: 'contain' }}
-                              onClick={() => {
+                              style={{ 
+                                objectFit: 'contain',
+                                willChange: imagePreview?.url === msg.attachment.url ? 'auto' : 'transform',
+                              }}
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 if (imagePreview?.url === msg.attachment!.url) {
                                   setImagePreview(null);
                                 } else {
                                   setImagePreview({url: msg.attachment!.url, name: msg.attachment!.name});
                                 }
+                              }}
+                              onLoad={(e) => {
+                                // Prevent flickering by ensuring image is fully loaded
+                                (e.target as HTMLImageElement).style.opacity = '1';
                               }}
                             />
                             {imagePreview?.url === msg.attachment.url && (
@@ -588,7 +632,7 @@ const ChatBox: React.FC<ChatBoxProps> = ({ chatId, chatType, permissions }) => {
       <Modal
         isOpen={!!messageToDelete}
         onClose={() => setMessageToDelete(null)}
-        title="Delete message?"
+        title={messageToDelete?.id === 'BULK_DELETE' ? `Delete ${selectedMessages.size} messages?` : "Delete message?"}
         size="sm"
         footer={
             <div className="flex justify-end gap-3">
@@ -607,7 +651,12 @@ const ChatBox: React.FC<ChatBoxProps> = ({ chatId, chatType, permissions }) => {
             </div>
         }
       >
-        <p className="text-gray-600">Are you sure you want to permanently delete this message? This action cannot be undone.</p>
+        <p className="text-gray-600">
+          {messageToDelete?.id === 'BULK_DELETE' 
+            ? `Are you sure you want to permanently delete ${selectedMessages.size} selected message(s)? This action cannot be undone.`
+            : "Are you sure you want to permanently delete this message? This action cannot be undone."
+          }
+        </p>
       </Modal>
 
       <Modal

@@ -1,5 +1,6 @@
 
 import React, { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 
 interface ModalProps {
   isOpen: boolean;
@@ -12,16 +13,31 @@ interface ModalProps {
 
 const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, footer, size = 'md' }) => {
   useEffect(() => {
+    if (isOpen) {
+      // Prevent body scroll when modal is open
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
     const handleEsc = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         onClose();
       }
     };
-    window.addEventListener('keydown', handleEsc);
+    if (isOpen) {
+      window.addEventListener('keydown', handleEsc);
+    }
     return () => {
       window.removeEventListener('keydown', handleEsc);
     };
-  }, [onClose]);
+  }, [onClose, isOpen]);
 
   if (!isOpen) return null;
 
@@ -32,9 +48,10 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, footer,
     xl: 'max-w-xl',
   };
 
-  return (
+  const modalContent = (
     <div
-      className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center p-4 transition-opacity duration-300"
+      className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center p-4 transition-opacity duration-300"
+      style={{ zIndex: 9999 }}
       onClick={onClose}
     >
       <div
@@ -44,7 +61,7 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, footer,
       >
         <div className="flex justify-between items-center p-4 border-b">
           <h3 className="text-lg font-semibold text-gray-800">{title}</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -70,6 +87,9 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, footer,
       `}</style>
     </div>
   );
+
+  // Use portal to render modal at document body level to avoid z-index issues
+  return createPortal(modalContent, document.body);
 };
 
 export default Modal;
