@@ -5,18 +5,26 @@ from .mongo import get_db
 
 class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
-        # Get chat_id and chat_type from URL
-        self.chat_id = self.scope['url_route']['kwargs']['chat_id']
-        self.chat_type = self.scope['url_route']['kwargs']['chat_type']
-        self.room_group_name = f'chat_{self.chat_type}_{self.chat_id}'
+        try:
+            # Get chat_id and chat_type from URL
+            self.chat_id = self.scope['url_route']['kwargs']['chat_id']
+            self.chat_type = self.scope['url_route']['kwargs']['chat_type']
+            self.room_group_name = f'chat_{self.chat_type}_{self.chat_id}'
 
-        # Join room group
-        await self.channel_layer.group_add(
-            self.room_group_name,
-            self.channel_name
-        )
+            print(f"[Consumer] Connecting to room: {self.room_group_name}")
 
-        await self.accept()
+            # Join room group
+            await self.channel_layer.group_add(
+                self.room_group_name,
+                self.channel_name
+            )
+
+            await self.accept()
+            print(f"[Consumer] Connection accepted for room: {self.room_group_name}")
+        except Exception as e:
+            print(f"[Consumer] Error in connect: {e}")
+            import traceback
+            traceback.print_exc()
 
     async def disconnect(self, close_code):
         # Leave room group
@@ -27,31 +35,46 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     # Receive message from WebSocket
     async def receive(self, text_data):
-        data = json.loads(text_data)
-        message_type = data.get('type')
+        try:
+            print(f"[Consumer] Received message: {text_data}")
+            data = json.loads(text_data)
+            message_type = data.get('type')
 
-        if message_type == 'chat_message':
-            # Save message to database
-            await self.save_message(data)
+            if message_type == 'chat_message':
+                print(f"[Consumer] Processing chat message for room: {self.room_group_name}")
+                # Save message to database
+                await self.save_message(data)
 
-            # Send message to room group
-            await self.channel_layer.group_send(
-                self.room_group_name,
-                {
-                    'type': 'chat_message',
-                    'message': data
-                }
-            )
+                # Send message to room group
+                await self.channel_layer.group_send(
+                    self.room_group_name,
+                    {
+                        'type': 'chat_message',
+                        'message': data
+                    }
+                )
+                print(f"[Consumer] Message broadcasted to room: {self.room_group_name}")
+        except Exception as e:
+            print(f"[Consumer] Error in receive: {e}")
+            import traceback
+            traceback.print_exc()
 
     # Receive message from room group
     async def chat_message(self, event):
-        message = event['message']
+        try:
+            print(f"[Consumer] Sending message to WebSocket client")
+            message = event['message']
 
-        # Send message to WebSocket
-        await self.send(text_data=json.dumps({
-            'type': 'chat_message',
-            'message': message
-        }))
+            # Send message to WebSocket
+            await self.send(text_data=json.dumps({
+                'type': 'chat_message',
+                'message': message
+            }))
+            print(f"[Consumer] Message sent to WebSocket client")
+        except Exception as e:
+            print(f"[Consumer] Error in chat_message: {e}")
+            import traceback
+            traceback.print_exc()
 
     @database_sync_to_async
     def save_message(self, data):
