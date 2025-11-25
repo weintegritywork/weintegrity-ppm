@@ -20,8 +20,14 @@ const ChatBox: React.FC<ChatBoxProps> = ({ chatId, chatType, permissions }) => {
   const chatEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [messageToDelete, setMessageToDelete] = useState<ChatMessage | null>(null);
+  const [messageToEdit, setMessageToEdit] = useState<ChatMessage | null>(null);
+  const [editText, setEditText] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [imagePreview, setImagePreview] = useState<{url: string, name: string} | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showSearch, setShowSearch] = useState(false);
+  const [displayCount, setDisplayCount] = useState(50);
+  const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(true);
 
   if (!dataContext || !authContext || !toastContext) return null;
 
@@ -29,14 +35,42 @@ const ChatBox: React.FC<ChatBoxProps> = ({ chatId, chatType, permissions }) => {
   const { currentUser } = authContext;
   const { addToast } = toastContext;
 
-  const messages =
+  const allMessages =
     chatType === 'story'
-      ? storyChats[chatId]
-      : projectChats[chatId];
+      ? storyChats[chatId] || []
+      : projectChats[chatId] || [];
+
+  // Filter messages by search query
+  const filteredMessages = searchQuery
+    ? allMessages.filter(msg => 
+        msg.text?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        getUserById(msg.authorId)?.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        getUserById(msg.authorId)?.lastName.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : allMessages;
+
+  // Paginate messages (show latest first, then load more)
+  const messages = filteredMessages.slice(-displayCount);
+  const hasMoreMessages = filteredMessages.length > displayCount;
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // Auto-refresh messages every 10 seconds
+  useEffect(() => {
+    if (!autoRefreshEnabled) return;
+    
+    const interval = setInterval(() => {
+      if (chatType === 'story') {
+        dataContext.fetchStoryChats(chatId);
+      } else {
+        dataContext.fetchProjectChats(chatId);
+      }
+    }, 10000); // 10 seconds
+
+    return () => clearInterval(interval);
+  }, [chatId, chatType, autoRefreshEnabled, dataContext]);
 
   const getUserById = (id: string): User | undefined => users.find(u => u.id === id);
 
@@ -51,9 +85,9 @@ const ChatBox: React.FC<ChatBoxProps> = ({ chatId, chatType, permissions }) => {
     };
 
     if (attachment) {
-      // Check file size (max 5MB)
-      if (attachment.size > 5 * 1024 * 1024) {
-        addToast('File size must be less than 5MB', 'error');
+      // Check file size (max 10MB)
+      if (attachment.size > 10 * 1024 * 1024) {
+        addToast('File size must be less than 10MB', 'error');
         return;
       }
       
@@ -108,7 +142,13 @@ const ChatBox: React.FC<ChatBoxProps> = ({ chatId, chatType, permissions }) => {
   
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      setAttachment(e.target.files[0]);
+      const file = e.target.files[0];
+      // Increase limit to 10MB
+      if (file.size > 10 * 1024 * 1024) {
+        addToast('File size must be less than 10MB', 'error');
+        return;
+      }
+      setAttachment(file);
     }
   };
   
@@ -124,6 +164,37 @@ const ChatBox: React.FC<ChatBoxProps> = ({ chatId, chatType, permissions }) => {
     }
   };
 
+  const handleEditMessage = (msg: ChatMessage) => {
+    setMessageToEdit(msg);
+    setEditText(msg.text || '');
+  };
+
+  const handleSaveEdit = async () => {
+    if (!messageToEdit || !editText.trim()) return;
+
+    try {
+      // Delete old message and send new one (simpler than updating)
+      await deleteChatMessage(chatId, chatType, messageToEdit.id);
+      
+      const updatedMessage: ChatMessage = {
+        ...messageToEdit,
+        text: editText,
+        timestamp: new Date().toISOString(),
+      };
+      
+      await addChatMessage(chatId, chatType, updatedMessage);
+      addToast('Message updated', 'success');
+      setMessageToEdit(null);
+      setEditText('');
+    } catch (error) {
+      addToast('Failed to update message', 'error');
+    }
+  };
+
+  const handleLoadMore = () => {
+    setDisplayCount(prev => prev + 50);
+  };
+
 
   if (!permissions.canView) {
     return (
@@ -136,7 +207,61 @@ const ChatBox: React.FC<ChatBoxProps> = ({ chatId, chatType, permissions }) => {
   return (
     <>
       <div className="flex flex-col h-[500px] bg-gray-50 rounded-lg">
+        {/* Search Bar */}
+        <div className="p-3 border-b border-gray-200 bg-white rounded-t-lg">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowSearch(!showSearch)}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              title="Search messages"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-600" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+              </svg>
+            </button>
+            {showSearch && (
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search messages..."
+                className="flex-1 p-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              />
+            )}
+            {showSearch && searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                ✕
+              </button>
+            )}
+            <div className="ml-auto flex items-center gap-2">
+              <span className="text-xs text-gray-500">{messages.length} messages</span>
+              <button
+                onClick={() => setAutoRefreshEnabled(!autoRefreshEnabled)}
+                className={`p-2 rounded-lg transition-colors ${autoRefreshEnabled ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'}`}
+                title={autoRefreshEnabled ? 'Auto-refresh ON' : 'Auto-refresh OFF'}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+        
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          {hasMoreMessages && (
+            <div className="text-center">
+              <button
+                onClick={handleLoadMore}
+                className="px-4 py-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-colors text-sm font-medium"
+              >
+                Load More Messages ({filteredMessages.length - displayCount} older)
+              </button>
+            </div>
+          )}
           {messages && messages.length > 0 ? (
             messages.map(msg => {
               const author = getUserById(msg.authorId);
@@ -197,7 +322,19 @@ const ChatBox: React.FC<ChatBoxProps> = ({ chatId, chatType, permissions }) => {
                     </div>
                   </div>
                   {isCurrentUser && (
-                    <div className="self-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="self-center opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                        {!msg.attachment && (
+                          <button
+                              onClick={() => handleEditMessage(msg)}
+                              className="p-1 rounded-full hover:bg-black/10"
+                              aria-label="Edit message"
+                              title="Edit message"
+                          >
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
+                                  <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                              </svg>
+                          </button>
+                        )}
                         <button
                             onClick={() => setMessageToDelete(msg)}
                             className="p-1 rounded-full hover:bg-black/10"
@@ -282,6 +419,48 @@ const ChatBox: React.FC<ChatBoxProps> = ({ chatId, chatType, permissions }) => {
         }
       >
         <p className="text-gray-600">Are you sure you want to permanently delete this message? This action cannot be undone.</p>
+      </Modal>
+
+      <Modal
+        isOpen={!!messageToEdit}
+        onClose={() => {
+          setMessageToEdit(null);
+          setEditText('');
+        }}
+        title="Edit Message"
+        size="md"
+        footer={
+            <div className="flex justify-end gap-3">
+                <button
+                    onClick={() => {
+                      setMessageToEdit(null);
+                      setEditText('');
+                    }}
+                    className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 font-medium"
+                >
+                    Cancel
+                </button>
+                <button
+                    onClick={handleSaveEdit}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+                    disabled={!editText.trim()}
+                >
+                    Save Changes
+                </button>
+            </div>
+        }
+      >
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Message</label>
+          <textarea
+            value={editText}
+            onChange={(e) => setEditText(e.target.value)}
+            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+            rows={4}
+            placeholder="Edit your message..."
+          />
+          <p className="text-xs text-gray-500 mt-2">Note: Edited messages will show the current timestamp.</p>
+        </div>
       </Modal>
       
 
