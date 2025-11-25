@@ -4,6 +4,7 @@ import { AuthContext } from '../context/AuthContext';
 import { ToastContext } from '../context/ToastContext';
 import { User, ChatMessage } from '../types';
 import Modal from './Modal';
+import { useWebSocket } from '../hooks/useWebSocket';
 
 interface ChatBoxProps {
   chatId: string;
@@ -40,6 +41,24 @@ const ChatBox: React.FC<ChatBoxProps> = ({ chatId, chatType, permissions }) => {
   const { currentUser } = authContext;
   const { addToast } = toastContext;
 
+  // WebSocket connection for real-time chat
+  const wsUrl = chatId 
+    ? `ws://localhost:8000/ws/chat/${chatType}/${chatId}/`
+    : null;
+
+  const { isConnected, sendMessage: sendWsMessage } = useWebSocket(wsUrl, {
+    onMessage: (data) => {
+      if (data.type === 'chat_message') {
+        // Refresh messages when new message arrives
+        if (chatType === 'story') {
+          dataContext.fetchStoryChats(chatId);
+        } else {
+          dataContext.fetchProjectChats(chatId);
+        }
+      }
+    },
+  });
+
   const allMessages =
     chatType === 'story'
       ? storyChats[chatId] || []
@@ -65,20 +84,7 @@ const ChatBox: React.FC<ChatBoxProps> = ({ chatId, chatType, permissions }) => {
     }
   }, [messages.length, shouldAutoScroll]); // Only depend on message count, not the entire messages array
 
-  // Auto-refresh messages every 10 seconds
-  useEffect(() => {
-    if (!autoRefreshEnabled) return;
-    
-    const interval = setInterval(() => {
-      if (chatType === 'story') {
-        dataContext.fetchStoryChats(chatId);
-      } else {
-        dataContext.fetchProjectChats(chatId);
-      }
-    }, 10000); // 10 seconds
-
-    return () => clearInterval(interval);
-  }, [chatId, chatType, autoRefreshEnabled, dataContext]);
+  // Auto-refresh removed - WebSocket provides real-time updates
 
   const getUserById = (id: string): User | undefined => users.find(u => u.id === id);
 
@@ -137,8 +143,20 @@ const ChatBox: React.FC<ChatBoxProps> = ({ chatId, chatType, permissions }) => {
     
     setIsSending(true);
     try {
-      await addChatMessage(chatId, chatType, message);
-      setNewMessage('');
+      // Send via WebSocket for instant delivery
+      if (isConnected) {
+        sendWsMessage({
+          type: 'chat_message',
+          chat_id: chatId,
+          chat_type: chatType,
+          message: message,
+        });
+        setNewMessage('');
+      } else {
+        // Fallback to HTTP if WebSocket disconnected
+        await addChatMessage(chatId, chatType, message);
+        setNewMessage('');
+      }
       setAttachment(null);
       if(fileInputRef.current) fileInputRef.current.value = '';
     } catch (error) {
