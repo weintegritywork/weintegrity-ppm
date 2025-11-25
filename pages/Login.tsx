@@ -232,17 +232,26 @@ const Login: React.FC = () => {
             <h2 className="title-gradient text-3xl font-bold text-center text-gray-900 mb-2">Forgot Password</h2>
             <p className="text-sm text-center text-gray-600 mb-6">Enter your email to receive a reset code.</p>
             <form className="space-y-5" onSubmit={handleForgotPasswordRequest}>
-              <div>
-                <label htmlFor="email-forgot" className="block text-sm font-medium text-gray-900 mb-2">Email Address</label>
-                <input
-                  id="email-forgot"
-                  type="email"
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  required
-                  className="input-field w-full px-4 py-3 rounded-lg text-gray-900 placeholder-gray-400"
-                  placeholder="you@example.com"
-                />
+              <div className="group/input">
+                <label htmlFor="email-forgot" className="block text-sm font-medium text-gray-600 mb-2 transition-colors duration-300 group-hover/input:text-indigo-600">
+                  Email Address
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <svg className="h-5 w-5 text-gray-400 transition-colors duration-300 group-hover/input:text-gray-500 group-focus-within/input:text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                  <input
+                    id="email-forgot"
+                    type="email"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    required
+                    className="input-field w-full pl-10 pr-4 py-3 rounded-lg text-gray-900 placeholder-gray-400 bg-white border border-gray-200 transition-all duration-300 hover:bg-gray-50 hover:border-gray-300 focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 focus:shadow-[0_0_15px_rgba(99,102,241,0.1)]"
+                    placeholder="you@example.com"
+                  />
+                </div>
               </div>
               <button type="submit" className="w-full btn-primary mt-6" disabled={isRequestingOtp}>
                 {isRequestingOtp ? 'Sending...' : 'Send Reset Code'}
@@ -259,8 +268,10 @@ const Login: React.FC = () => {
             <h2 className="title-gradient text-3xl font-bold text-center text-gray-900 mb-2">Reset Your Password</h2>
             <p className="text-sm text-center text-gray-600 mb-6">An OTP has been sent to <span className="font-semibold text-gray-900">{resetEmail || email}</span>. Please check your email.</p>
             <form className="space-y-5" onSubmit={handleResetPasswordSubmit}>
-              <div>
-                <label htmlFor="otp" className="block text-sm font-medium text-gray-900 mb-2">OTP Code</label>
+              <div className="group/input">
+                <label htmlFor="otp" className="block text-sm font-medium text-gray-600 mb-2 transition-colors duration-300 group-hover/input:text-indigo-600">
+                  OTP Code
+                </label>
                 <div className="flex gap-2">
                   <input
                     type="text"
@@ -273,7 +284,7 @@ const Login: React.FC = () => {
                     placeholder="Enter 6-digit code"
                     required
                     maxLength={6}
-                    className="input-field flex-1 px-4 py-3 rounded-lg text-gray-900 placeholder-gray-400 text-center text-lg tracking-widest font-mono"
+                    className="input-field flex-1 px-4 py-3 rounded-lg text-gray-900 placeholder-gray-400 text-center text-lg tracking-widest font-mono bg-white border border-gray-200 transition-all duration-300 hover:bg-gray-50 hover:border-gray-300 focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 focus:shadow-[0_0_15px_rgba(99,102,241,0.1)] disabled:bg-gray-100 disabled:cursor-not-allowed"
                     disabled={isOtpVerified}
                   />
                   <button
@@ -327,19 +338,28 @@ const Login: React.FC = () => {
                 </div>
               </div>
               
-              <div>
-                <label htmlFor="new-password" className="block text-sm font-medium text-gray-900 mb-2">New Password</label>
-                <input
-                  id="new-password"
-                  type="password"
-                  value={newPassword}
-                  onChange={e => setNewPassword(e.target.value)}
-                  required
-                  minLength={6}
-                  disabled={!isOtpVerified}
-                  className="input-field w-full px-4 py-3 rounded-lg text-gray-900 placeholder-gray-400 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                  placeholder="••••••••"
-                />
+              <div className="group/input">
+                <label htmlFor="new-password" className="block text-sm font-medium text-gray-600 mb-2 transition-colors duration-300 group-hover/input:text-indigo-600">
+                  New Password
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <svg className="h-5 w-5 text-gray-400 transition-colors duration-300 group-hover/input:text-gray-500 group-focus-within/input:text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                    </svg>
+                  </div>
+                  <input
+                    id="new-password"
+                    type="password"
+                    value={newPassword}
+                    onChange={e => setNewPassword(e.target.value)}
+                    required
+                    minLength={6}
+                    disabled={!isOtpVerified}
+                    className="input-field w-full pl-10 pr-4 py-3 rounded-lg text-gray-900 placeholder-gray-400 bg-white border border-gray-200 transition-all duration-300 hover:bg-gray-50 hover:border-gray-300 focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 focus:shadow-[0_0_15px_rgba(99,102,241,0.1)] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                    placeholder="••••••••"
+                  />
+                </div>
                 <p className="text-xs text-gray-500 mt-1">Minimum 6 characters</p>
               </div>
               
@@ -375,30 +395,48 @@ const Login: React.FC = () => {
                 </div>
             )}
             <form className="space-y-5" onSubmit={handleLoginSubmit}>
-              <div>
-                <label htmlFor="email-login" className="block text-sm font-medium text-gray-900 mb-2">Email Address</label>
-                <input
-                  id="email-login"
-                  type="email"
-                  value={emailForLogin}
-                  onChange={e => setEmailForLogin(e.target.value)}
-                  required
-                  className="input-field w-full px-4 py-3 rounded-lg text-gray-900 placeholder-gray-400"
-                  placeholder="you@example.com"
-                />
+              <div className="group/input">
+                <label htmlFor="email-login" className="block text-sm font-medium text-gray-600 mb-2 transition-colors duration-300 group-hover/input:text-indigo-600">
+                  Email Address
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <svg className="h-5 w-5 text-gray-400 transition-colors duration-300 group-hover/input:text-gray-500 group-focus-within/input:text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                  </div>
+                  <input
+                    id="email-login"
+                    type="email"
+                    value={emailForLogin}
+                    onChange={e => setEmailForLogin(e.target.value)}
+                    required
+                    className="input-field w-full pl-10 pr-4 py-3 rounded-lg text-gray-900 placeholder-gray-400 bg-white border border-gray-200 transition-all duration-300 hover:bg-gray-50 hover:border-gray-300 focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 focus:shadow-[0_0_15px_rgba(99,102,241,0.1)]"
+                    placeholder="you@example.com"
+                  />
+                </div>
               </div>
               
-              <div>
-                <label htmlFor="password-login" className="block text-sm font-medium text-gray-900 mb-2">Password</label>
-                <input
-                  id="password-login"
-                  type="password"
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  required
-                  className="input-field w-full px-4 py-3 rounded-lg text-gray-900 placeholder-gray-400"
-                  placeholder="••••••••"
-                />
+              <div className="group/input">
+                <label htmlFor="password-login" className="block text-sm font-medium text-gray-600 mb-2 transition-colors duration-300 group-hover/input:text-indigo-600">
+                  Password
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <svg className="h-5 w-5 text-gray-400 transition-colors duration-300 group-hover/input:text-gray-500 group-focus-within/input:text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                  </div>
+                  <input
+                    id="password-login"
+                    type="password"
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    required
+                    className="input-field w-full pl-10 pr-4 py-3 rounded-lg text-gray-900 placeholder-gray-400 bg-white border border-gray-200 transition-all duration-300 hover:bg-gray-50 hover:border-gray-300 focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 focus:shadow-[0_0_15px_rgba(99,102,241,0.1)]"
+                    placeholder="••••••••"
+                  />
+                </div>
               </div>
               
               <div className="text-center pt-2">
@@ -497,15 +535,8 @@ const Login: React.FC = () => {
           box-shadow: 0 20px 40px 0 rgba(31, 38, 135, 0.2);
           transform: translateY(-4px);
         }
-        .input-field {
-          background: white;
-          border: 1px solid #e5e7eb;
-          transition: all 0.3s ease;
-        }
         .input-field:focus {
           outline: none;
-          border-color: #6366f1;
-          box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
         }
         .title-gradient {
           transition: all 0.4s ease;
