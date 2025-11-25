@@ -229,7 +229,7 @@ const Login: React.FC = () => {
       case 'FORGOT_PASSWORD':
         return (
           <>
-            <h2 className="text-3xl font-bold text-center text-gray-900 mb-2">Forgot Password</h2>
+            <h2 className="title-gradient text-3xl font-bold text-center text-gray-900 mb-2">Forgot Password</h2>
             <p className="text-sm text-center text-gray-600 mb-6">Enter your email to receive a reset code.</p>
             <form className="space-y-5" onSubmit={handleForgotPasswordRequest}>
               <div>
@@ -256,7 +256,7 @@ const Login: React.FC = () => {
       case 'RESET_PASSWORD':
          return (
           <>
-            <h2 className="text-3xl font-bold text-center text-gray-900 mb-2">Reset Your Password</h2>
+            <h2 className="title-gradient text-3xl font-bold text-center text-gray-900 mb-2">Reset Your Password</h2>
             <p className="text-sm text-center text-gray-600 mb-6">An OTP has been sent to <span className="font-semibold text-gray-900">{resetEmail || email}</span>. Please check your email.</p>
             <form className="space-y-5" onSubmit={handleResetPasswordSubmit}>
               <div>
@@ -366,7 +366,7 @@ const Login: React.FC = () => {
       default:
         return (
           <>
-            <h2 className="text-3xl font-bold text-center text-gray-900 mb-2">Sign In</h2>
+            <h2 className="title-gradient text-3xl font-bold text-center text-gray-900 mb-2">Sign In</h2>
             <p className="text-sm text-center text-gray-600 mb-6">Welcome back! Please enter your details.</p>
             {maintenanceMode && (
                 <div className="mb-6 p-4 bg-orange-50 border border-orange-200 rounded-lg text-orange-800">
@@ -489,7 +489,13 @@ const Login: React.FC = () => {
           backdrop-filter: blur(10px);
           -webkit-backdrop-filter: blur(10px);
           border: 1px solid rgba(255, 255, 255, 0.3);
-          box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+          box-shadow: 0 8px 30px 0 rgba(31, 38, 135, 0.15);
+          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .glass-card:hover {
+          background: rgba(255, 255, 255, 0.9);
+          box-shadow: 0 20px 40px 0 rgba(31, 38, 135, 0.2);
+          transform: translateY(-4px);
         }
         .input-field {
           background: white;
@@ -500,6 +506,15 @@ const Login: React.FC = () => {
           outline: none;
           border-color: #6366f1;
           box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+        .title-gradient {
+          transition: all 0.4s ease;
+        }
+        .glass-card:hover .title-gradient {
+          background: linear-gradient(135deg, #6366f1 0%, #3b82f6 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
         }
       `}</style>
 
