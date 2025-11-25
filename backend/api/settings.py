@@ -93,8 +93,15 @@ if cors_origins:
     CORS_ALLOW_ALL_ORIGINS = False
     CORS_ALLOWED_ORIGINS = [o.strip() for o in cors_origins.split(',') if o.strip()]
 else:
-    # default dev mode
-    CORS_ALLOW_ALL_ORIGINS = True
+    # Default allowed origins for development and production
+    CORS_ALLOW_ALL_ORIGINS = False
+    CORS_ALLOWED_ORIGINS = [
+        'https://yognito.com',
+        'https://www.yognito.com',
+        'https://ppm.weintegrity.com',
+        'http://localhost:5173',
+        'http://localhost:3000',
+    ]
 
 # Additional CORS settings
 CORS_ALLOW_CREDENTIALS = True
