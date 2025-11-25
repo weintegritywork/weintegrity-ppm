@@ -28,6 +28,9 @@ const ChatBox: React.FC<ChatBoxProps> = ({ chatId, chatType, permissions }) => {
   const [showSearch, setShowSearch] = useState(false);
   const [displayCount, setDisplayCount] = useState(50);
   const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(true);
+  const [selectedMessages, setSelectedMessages] = useState<Set<string>>(new Set());
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [focusedMessageIndex, setFocusedMessageIndex] = useState<number>(-1);
 
   if (!dataContext || !authContext || !toastContext) return null;
 
@@ -195,6 +198,82 @@ const ChatBox: React.FC<ChatBoxProps> = ({ chatId, chatType, permissions }) => {
     setDisplayCount(prev => prev + 50);
   };
 
+  const handleMessageClick = (msgId: string, event: React.MouseEvent) => {
+    if (event.ctrlKey || event.metaKey) {
+      // Ctrl+Click to toggle selection
+      setSelectionMode(true);
+      setSelectedMessages(prev => {
+        const newSet = new Set(prev);
+        if (newSet.has(msgId)) {
+          newSet.delete(msgId);
+        } else {
+          newSet.add(msgId);
+        }
+        return newSet;
+      });
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedMessages.size === 0) return;
+    
+    try {
+      // Delete all selected messages
+      await Promise.all(
+        Array.from(selectedMessages).map(msgId =>
+          deleteChatMessage(chatId, chatType, msgId)
+        )
+      );
+      addToast(`${selectedMessages.size} message(s) deleted`, 'success');
+      setSelectedMessages(new Set());
+      setSelectionMode(false);
+    } catch (error) {
+      addToast('Failed to delete messages', 'error');
+    }
+  };
+
+  const handleCancelSelection = () => {
+    setSelectedMessages(new Set());
+    setSelectionMode(false);
+  };
+
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!selectionMode || messages.length === 0) return;
+
+      const myMessages = messages.filter(msg => msg.authorId === currentUser?.id);
+      if (myMessages.length === 0) return;
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setFocusedMessageIndex(prev => 
+          prev < myMessages.length - 1 ? prev + 1 : prev
+        );
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setFocusedMessageIndex(prev => prev > 0 ? prev - 1 : 0);
+      } else if (e.key === 'Enter' && focusedMessageIndex >= 0) {
+        e.preventDefault();
+        const msg = myMessages[focusedMessageIndex];
+        setSelectedMessages(prev => {
+          const newSet = new Set(prev);
+          if (newSet.has(msg.id)) {
+            newSet.delete(msg.id);
+          } else {
+            newSet.add(msg.id);
+          }
+          return newSet;
+        });
+      } else if (e.key === 'Escape') {
+        handleCancelSelection();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectionMode, messages, focusedMessageIndex, currentUser]);
+
 
   if (!permissions.canView) {
     return (
@@ -207,18 +286,41 @@ const ChatBox: React.FC<ChatBoxProps> = ({ chatId, chatType, permissions }) => {
   return (
     <>
       <div className="flex flex-col h-[500px] bg-gray-50 rounded-lg">
-        {/* Search Bar */}
+        {/* Search Bar & Selection Mode */}
         <div className="p-3 border-b border-gray-200 bg-white rounded-t-lg">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setShowSearch(!showSearch)}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              title="Search messages"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-600" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
-              </svg>
-            </button>
+          {selectionMode ? (
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-gray-700">
+                {selectedMessages.size} selected
+              </span>
+              <button
+                onClick={handleBulkDelete}
+                disabled={selectedMessages.size === 0}
+                className="px-3 py-1 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Delete Selected
+              </button>
+              <button
+                onClick={handleCancelSelection}
+                className="px-3 py-1 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-sm font-medium"
+              >
+                Cancel
+              </button>
+              <span className="ml-auto text-xs text-gray-500">
+                Ctrl+Click to select • Arrow keys to navigate • Enter to toggle • Esc to cancel
+              </span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowSearch(!showSearch)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                title="Search messages"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-600" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+                </svg>
+              </button>
             {showSearch && (
               <input
                 type="text"
@@ -248,7 +350,7 @@ const ChatBox: React.FC<ChatBoxProps> = ({ chatId, chatType, permissions }) => {
                 </svg>
               </button>
             </div>
-          </div>
+          )}
         </div>
         
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -266,10 +368,24 @@ const ChatBox: React.FC<ChatBoxProps> = ({ chatId, chatType, permissions }) => {
             messages.map(msg => {
               const author = getUserById(msg.authorId);
               const isCurrentUser = author?.id === currentUser?.id;
+              const isSelected = selectedMessages.has(msg.id);
               return (
-                <div key={msg.id} className={`group flex items-start gap-3 ${isCurrentUser ? 'flex-row-reverse' : ''}`}>
-                  <div className={`w-8 h-8 rounded-full flex-shrink-0 ${isCurrentUser ? 'bg-blue-500' : 'bg-gray-300'} text-white flex items-center justify-center font-bold`}>
-                    {author?.firstName.charAt(0)}{author?.lastName.charAt(0)}
+                <div 
+                  key={msg.id} 
+                  className={`group flex items-start gap-3 ${isCurrentUser ? 'flex-row-reverse' : ''} ${isSelected ? 'bg-blue-50 p-2 rounded-lg' : ''} ${selectionMode && isCurrentUser ? 'cursor-pointer' : ''}`}
+                  onClick={(e) => isCurrentUser && handleMessageClick(msg.id, e)}
+                >
+                  <div className="relative">
+                    <div className={`w-8 h-8 rounded-full flex-shrink-0 ${isCurrentUser ? 'bg-blue-500' : 'bg-gray-300'} text-white flex items-center justify-center font-bold`}>
+                      {author?.firstName.charAt(0)}{author?.lastName.charAt(0)}
+                    </div>
+                    {isSelected && (
+                      <div className="absolute -top-1 -right-1 w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-white" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                    )}
                   </div>
                   <div className={`p-3 rounded-lg max-w-xs md:max-w-md ${isCurrentUser ? 'bg-blue-500 text-white' : 'bg-white shadow-sm'}`}>
                     <div className="font-bold text-sm">
