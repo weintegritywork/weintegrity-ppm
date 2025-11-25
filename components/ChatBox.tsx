@@ -285,9 +285,47 @@ const ChatBox: React.FC<ChatBoxProps> = ({ chatId, chatType, permissions }) => {
 
   return (
     <>
-      <div className="flex flex-col h-[500px] bg-gray-50 rounded-lg">
+      <style>{`
+        @keyframes slideUp {
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        .animate-slide-up {
+          animation: slideUp 0.3s ease-out;
+        }
+        .animate-fade-in {
+          animation: fadeIn 0.3s ease-out;
+        }
+        .scroll-smooth {
+          scroll-behavior: smooth;
+        }
+        .scroll-smooth::-webkit-scrollbar {
+          width: 6px;
+        }
+        .scroll-smooth::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .scroll-smooth::-webkit-scrollbar-thumb {
+          background: #cbd5e1;
+          border-radius: 10px;
+        }
+        .scroll-smooth::-webkit-scrollbar-thumb:hover {
+          background: #94a3b8;
+        }
+      `}</style>
+      <div className="flex flex-col h-[600px] bg-gradient-to-b from-gray-50 to-gray-100 rounded-2xl shadow-lg overflow-hidden">
         {/* Search Bar & Selection Mode */}
-        <div className="p-3 border-b border-gray-200 bg-white rounded-t-lg">
+        <div className="p-4 border-b border-gray-200 bg-white backdrop-blur-sm bg-opacity-95 sticky top-0 z-10">
           {selectionMode ? (
             <div className="flex items-center gap-2">
               <span className="text-sm font-medium text-gray-700">
@@ -353,14 +391,16 @@ const ChatBox: React.FC<ChatBoxProps> = ({ chatId, chatType, permissions }) => {
           )}
         </div>
         
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div className="flex-1 overflow-y-auto p-4 space-y-3 scroll-smooth" style={{
+          backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23e5e7eb\' fill-opacity=\'0.15\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
+        }}>
           {hasMoreMessages && (
-            <div className="text-center">
+            <div className="text-center animate-fade-in">
               <button
                 onClick={handleLoadMore}
-                className="px-4 py-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-colors text-sm font-medium"
+                className="px-4 py-2 bg-white text-gray-600 rounded-full hover:bg-gray-50 transition-all duration-200 text-sm font-medium shadow-sm hover:shadow-md transform hover:scale-105"
               >
-                Load More Messages ({filteredMessages.length - displayCount} older)
+                ↑ Load {filteredMessages.length - displayCount} older messages
               </button>
             </div>
           )}
@@ -372,26 +412,35 @@ const ChatBox: React.FC<ChatBoxProps> = ({ chatId, chatType, permissions }) => {
               return (
                 <div 
                   key={msg.id} 
-                  className={`group flex items-start gap-3 ${isCurrentUser ? 'flex-row-reverse' : ''} ${isSelected ? 'bg-blue-50 p-2 rounded-lg' : ''} ${selectionMode && isCurrentUser ? 'cursor-pointer' : ''}`}
+                  className={`group flex items-end gap-2 ${isCurrentUser ? 'flex-row-reverse' : ''} ${isSelected ? 'bg-blue-50 bg-opacity-50 p-2 rounded-2xl' : ''} ${selectionMode && isCurrentUser ? 'cursor-pointer' : ''} animate-slide-up`}
                   onClick={(e) => isCurrentUser && handleMessageClick(msg.id, e)}
+                  style={{
+                    animation: 'slideUp 0.3s ease-out'
+                  }}
                 >
-                  <div className="relative">
-                    <div className={`w-8 h-8 rounded-full flex-shrink-0 ${isCurrentUser ? 'bg-blue-500' : 'bg-gray-300'} text-white flex items-center justify-center font-bold`}>
+                  <div className="relative flex-shrink-0">
+                    <div className={`w-8 h-8 rounded-full flex-shrink-0 ${isCurrentUser ? 'bg-gradient-to-br from-blue-500 to-blue-600' : 'bg-gradient-to-br from-gray-400 to-gray-500'} text-white flex items-center justify-center font-bold text-xs shadow-md`}>
                       {author?.firstName.charAt(0)}{author?.lastName.charAt(0)}
                     </div>
                     {isSelected && (
-                      <div className="absolute -top-1 -right-1 w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center">
+                      <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center shadow-lg animate-bounce">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-white" viewBox="0 0 20 20" fill="currentColor">
                           <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                         </svg>
                       </div>
                     )}
                   </div>
-                  <div className={`p-3 rounded-lg max-w-xs md:max-w-md ${isCurrentUser ? 'bg-blue-500 text-white' : 'bg-white shadow-sm'}`}>
-                    <div className="font-bold text-sm">
-                      {author?.firstName} {author?.lastName} <span className="font-normal text-xs opacity-75 ml-2">{author?.role}</span>
-                    </div>
-                    {msg.text && <p className="text-sm mt-1 break-words">{msg.text}</p>}
+                  <div className={`relative px-4 py-2 rounded-2xl max-w-xs md:max-w-md transition-all duration-200 ${
+                    isCurrentUser 
+                      ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg rounded-br-sm' 
+                      : 'bg-white text-gray-800 shadow-md rounded-bl-sm'
+                  }`}>
+                    {!isCurrentUser && (
+                      <div className="font-semibold text-xs mb-1 text-gray-600">
+                        {author?.firstName} {author?.lastName}
+                      </div>
+                    )}
+                    {msg.text && <p className="text-sm leading-relaxed break-words">{msg.text}</p>}
                     {msg.attachment && (
                       <div className={`mt-2 p-2 rounded-md ${isCurrentUser ? 'bg-blue-600' : 'bg-gray-100'}`}>
                         {msg.attachment.name.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
@@ -433,31 +482,36 @@ const ChatBox: React.FC<ChatBoxProps> = ({ chatId, chatType, permissions }) => {
                         )}
                       </div>
                     )}
-                    <div className="text-xs opacity-60 text-right mt-2">
-                      {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    <div className={`text-xs mt-1 flex items-center gap-1 ${isCurrentUser ? 'justify-end text-white text-opacity-80' : 'justify-end text-gray-500'}`}>
+                      <span>{new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                      {isCurrentUser && (
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      )}
                     </div>
                   </div>
-                  {isCurrentUser && (
-                    <div className="self-center opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                  {isCurrentUser && !selectionMode && (
+                    <div className="self-end mb-2 opacity-0 group-hover:opacity-100 transition-all duration-200 flex gap-1">
                         {!msg.attachment && (
                           <button
                               onClick={() => handleEditMessage(msg)}
-                              className="p-1 rounded-full hover:bg-black/10"
+                              className="p-1.5 rounded-full bg-white shadow-md hover:shadow-lg hover:scale-110 transition-all duration-200"
                               aria-label="Edit message"
                               title="Edit message"
                           >
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 text-blue-600" viewBox="0 0 20 20" fill="currentColor">
                                   <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
                               </svg>
                           </button>
                         )}
                         <button
                             onClick={() => setMessageToDelete(msg)}
-                            className="p-1 rounded-full hover:bg-black/10"
+                            className="p-1.5 rounded-full bg-white shadow-md hover:shadow-lg hover:scale-110 transition-all duration-200"
                             aria-label="Delete message"
                             title="Delete message"
                         >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 text-red-600" viewBox="0 0 20 20" fill="currentColor">
                                 <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
                             </svg>
                         </button>
@@ -471,32 +525,50 @@ const ChatBox: React.FC<ChatBoxProps> = ({ chatId, chatType, permissions }) => {
           )}
           <div ref={chatEndRef} />
         </div>
-        <div className="p-4 border-t border-gray-200">
+        <div className="p-4 bg-white border-t border-gray-200 backdrop-blur-sm bg-opacity-95">
           {permissions.canChat ? (
             <>
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                  placeholder="Type a message..."
-                  className="flex-1 p-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
-                />
-                <button
-                  onClick={handleSendMessage}
-                  className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors shadow-sm disabled:bg-blue-300 disabled:cursor-not-allowed"
-                  disabled={(!newMessage.trim() && !attachment) || isSending}
+              <div className="flex items-center gap-3">
+                <button 
+                  onClick={() => fileInputRef.current?.click()} 
+                  className="p-2.5 rounded-full hover:bg-gray-100 transition-all duration-200 hover:scale-110"
+                  title="Attach file"
                 >
-                  {isSending ? 'Sending...' : 'Send'}
-                </button>
-                <button onClick={() => fileInputRef.current?.click()} className="p-2 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors">
-                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
+                   <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M8 4a3 3 0 00-3 3v4a3 3 0 006 0V7a3 3 0 00-3-3zM7 7a1 1 0 012 0v4a1 1 0 11-2 0V7z" clipRule="evenodd" />
                     <path d="M4 8V7a1 1 0 011-1h12a1 1 0 110 2H5a1 1 0 01-1-1z" />
                   </svg>
                 </button>
                 <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" />
+                
+                <div className="flex-1 relative">
+                  <input
+                    type="text"
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
+                    placeholder="Type a message..."
+                    className="w-full px-4 py-3 bg-gray-100 rounded-full focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all duration-200 text-sm"
+                  />
+                </div>
+                
+                <button
+                  onClick={handleSendMessage}
+                  className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-full hover:from-blue-600 hover:to-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 active:scale-95"
+                  disabled={(!newMessage.trim() && !attachment) || isSending}
+                  title="Send message"
+                >
+                  {isSending ? (
+                    <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                  ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
+                    </svg>
+                  )}
+                </button>
               </div>
                {attachment && (
                 <div className="text-xs text-gray-600 mt-2 flex items-center justify-between bg-gray-100 p-2 rounded-md">
