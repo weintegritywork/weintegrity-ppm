@@ -388,6 +388,7 @@ const ChatBox: React.FC<ChatBoxProps> = ({ chatId, chatType, permissions }) => {
                 </svg>
               </button>
             </div>
+            </div>
           )}
         </div>
         
